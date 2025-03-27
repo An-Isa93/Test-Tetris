@@ -1,4 +1,3 @@
-from pickle import TRUE
 import pygame
 import random
 import time
@@ -27,11 +26,20 @@ class Graphics():
         }
         self.is_paused = False
 
+        # Side spaces
+        # self.extra_height = 20 (TILE_SIZE)
+        self.side_width = 260
+        self.side_rows = 8
+        self.side_cols = 4
+
     def main(self):
-        screen = pygame.display.set_mode((self.screen_w, self.screen_h))
+        screen = pygame.display.set_mode((self.screen_w + self.side_width * 2,
+                                          self.screen_h + self.TILE_SIZE * 2))
         clock = pygame.time.Clock()
-        screen.fill(pygame.Color("black"))
+        screen.fill(pygame.Color("grey73"))
         gs = GameState()
+        self.drawBorder(screen)
+        self.draw_sides(screen, gs)
         running = True
         while(running):
             clock.tick(60)
@@ -50,7 +58,7 @@ class Graphics():
                     elif action.key == pygame.K_DOWN:
                         gs.moveDown()
                     elif action.key == pygame.K_c:
-                        gs.hodlPiece()
+                        gs.hold_Piece()
                     elif action.key == pygame.K_SPACE:
                         gs.dropPiece()
                     elif action.key == pygame.K_ESCAPE:
@@ -77,7 +85,43 @@ class Graphics():
         for row in range(self.rows):
             for col in range(self.cols):
                 pygame.draw.rect(screen, self.colors[gs.board[row][col]],
-                                 pygame.Rect(col * self.TILE_SIZE, row * self.TILE_SIZE, self.TILE_SIZE, self.TILE_SIZE))        
+                                 pygame.Rect(col * self.TILE_SIZE + self.side_width, row * self.TILE_SIZE + self.TILE_SIZE, self.TILE_SIZE, self.TILE_SIZE))
+        self.draw_sides(screen, gs)
+
+    def draw_sides(self, screen, gs):
+        # left side (hold piece)
+        for row in range(4):
+            for col in range(4):
+                pygame.draw.rect(screen, self.colors[gs.holdPieceGrid[row-1][col]] if 1<= row<= 2 else pygame.Color('black'),
+                    pygame.Rect(col * self.TILE_SIZE + (self.side_width - self.side_cols * self.TILE_SIZE) // 2 - 10,
+                                row * self.TILE_SIZE + self.TILE_SIZE + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE),
+                                self.TILE_SIZE, self.TILE_SIZE))
+
+
+        # right side (next pieces)
+        for row in range(self.side_rows):
+            for col in range(self.side_cols):
+                pygame.draw.rect(screen, self.colors[gs.nextPiecesGrid[row][col]],
+                    pygame.Rect(col * self.TILE_SIZE + self.screen_w + self.side_width + (self.side_width - self.side_cols * self.TILE_SIZE) // 2,
+                                row * self.TILE_SIZE + self.TILE_SIZE + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE),
+                                self.TILE_SIZE, self.TILE_SIZE))            
+    
+    def drawBorder(self, screen):
+        font = pygame.font.SysFont('Arial', 48)
+        text = font.render('Hold', True, (255, 255, 255))  # White text
+        screen.blit(text, (self.side_width // 2 - text.get_width() // 2 - 10, 
+                        (self.TILE_SIZE*2 + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE)) // 2 - text.get_height() // 2))
+        text2 = font.render('Next', True, (255, 255, 255))  # White text
+        screen.blit(text2, (self.side_width // 2 - text.get_width() // 2 + self.side_width + self.screen_w, 
+                        (self.TILE_SIZE*2 + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE)) // 2 - text.get_height() // 2))
+
+        for row in range(self.rows+2):
+            for col in range(self.cols+2):
+                pygame.draw.rect(screen, pygame.Color('black'),
+                                 pygame.Rect(col * self.TILE_SIZE + self.side_width - self.TILE_SIZE, row * self.TILE_SIZE, self.TILE_SIZE, self.TILE_SIZE))
+
+                pygame.draw.rect(screen, pygame.Color('grey48'),
+                                 pygame.Rect(col * self.TILE_SIZE + self.side_width - self.TILE_SIZE, row * self.TILE_SIZE, self.TILE_SIZE-2, self.TILE_SIZE-2))
 
 class GameState(): #10x20
     def __init__(self):
@@ -105,14 +149,34 @@ class GameState(): #10x20
         ]
         self.rows = 20
         self.cols = 10
-        self.log = []
-        self.nextPieces = []
-        self.holdPiece = None
+        self.log = [] # For training purposes
         self.images = ['I', 'O', 'T', 'L', 'J', 'S', 'Z']
         self.currentPiece = None
-        self.spawnPieces()
         self.last_move_time = time.time()
         self.updates = []
+
+        # Next Pieces
+        self.nextPieces = []
+        self.nextPiecesGrid = [
+            [0,0,0,0], # Piece 1
+            [0,0,0,0],
+            [0,0,0,0], 
+            [0,0,0,0], # Piece 2
+            [0,0,0,0],
+            [0,0,0,0], 
+            [0,0,0,0], # Piece 3
+            [0,0,0,0],
+            [0,0,0,0]
+        ]
+
+        # Hold piece
+        self.holdPiece = None
+        self.holdPieceGrid = [
+            [0,0,0,0],
+            [0,0,0,0]
+        ]
+
+        self.spawnPieces()
 
     def spawnPieces(self):
         while len(self.nextPieces) < 4:
@@ -134,6 +198,36 @@ class GameState(): #10x20
             else:
                 self.board[r][c] = self.currentPiece.type
 
+        # Spawn next pieces
+        # Clear preview grid
+        self.nextPiecesGrid = [[0] * 4 for _ in range(9)]  # Now 9 rows for spacing
+
+        # Spawn next pieces in the preview grid
+        for i, piece in enumerate(self.nextPieces[:3]):  # Only display the next 3 pieces
+            type = piece.type
+            s_r = 3 * i # Each piece starts at row `3*i`, column 1 for centering
+            s_c = 0
+
+            if type in {'I', 'J', 'Z'}:
+                s_c = 0  # I-piece is wider, so shift left
+            elif type in {'O', 'T'}:
+                s_c = 1  # Default center for 3-wide pieces
+            else:  # L and J
+                s_c = 2 
+
+            # Adjust the shape to fit within the section
+            pseudo_shape = [(r + s_r, c + s_c) for r, c in piece.shape]
+
+            # Ensure the piece stays within bounds
+            for r, c in pseudo_shape:
+                if 0 <= r < 9 and 0 <= c < 4:
+                    self.nextPiecesGrid[r][c] = type
+
+        # Debugging output
+        # print([p.type for p in self.nextPieces])
+        # for row in self.nextPiecesGrid:
+        #     print(row)
+
     def update(self):
         current_positions = self.currentPiece.get_cells()
         new_positions = [(r + 1, c) for r, c in current_positions]
@@ -154,7 +248,7 @@ class GameState(): #10x20
                     self.board[r][c] = self.currentPiece.type  
             else:
                 # Lock the piece and spawn a new one
-                print("Locking piece")
+                # print("Locking piece")
                 self.placePiece()
 
     def canMoveDown(self):
@@ -182,7 +276,7 @@ class GameState(): #10x20
         shape_center = self.currentPiece.shape[2]
         new_shape = []
         new_positions = []
-        print(self.currentPiece.cells, "**************")
+        #print(self.currentPiece.cells, "**************")
 
         pivot = self.currentPiece.shape[2]
         
@@ -214,19 +308,19 @@ class GameState(): #10x20
         for r, c in new_pos:
             # Check if the position is out of bounds
             if not (0 <= r < self.rows and 0 <= c < self.cols):
-                print("Rotation out of bounds.")
+                # print("Rotation out of bounds.")
                 return False  # Rotation is not valid, out of bounds
             
             # Check if the position is occupied by another piece (not the current piece's cells)
             if self.board[r][c] != 0 and (r, c) not in current_positions:
-                print("Spot occupied by another piece.")
+                # print("Spot occupied by another piece.")
                 return False  # Rotation is not valid, occupied spot
 
         # Clear the current piece's old positions on the board
         for r, c in current_positions:
             self.board[r][c] = 0
 
-        print("Rotating piece")
+        # print("Rotating piece")
 
         # Update the board with the new rotated positions
         self.currentPiece.cells = new_pos
@@ -234,7 +328,6 @@ class GameState(): #10x20
         for r, c in new_pos:
             self.board[r][c] = self.currentPiece.type
         return True
-
 
     def update_board(self, new_pos):
         # Assuming you have the logic for updating the board when a piece is placed
@@ -250,7 +343,7 @@ class GameState(): #10x20
             for r, c in current_positions:
                 self.board[r][c] = 0
             
-            print("Moving piece left")
+            # print("Moving piece left")
             
             # Move piece down
             self.currentPiece.col -= 1  
@@ -272,7 +365,7 @@ class GameState(): #10x20
             for r, c in current_positions:
                 self.board[r][c] = 0
             
-            print("Moving piece right")
+            # print("Moving piece right")
             
             # Move piece down
             self.currentPiece.col += 1  
@@ -294,7 +387,7 @@ class GameState(): #10x20
             for r, c in current_positions:
                 self.board[r][c] = 0
             
-            print("Moving piece down")
+            # print("Moving piece down")
             
             # Move piece down
             self.currentPiece.row += 1  
@@ -304,11 +397,67 @@ class GameState(): #10x20
                 self.board[r][c] = self.currentPiece.type  
         else:
             # Lock the piece and spawn a new one
-            print("Locking piece")
+            # print("Locking piece")
             self.placePiece()
 
-    def holdPiece(self):
-        pass
+    def hold_Piece(self):
+        for r,c in self.currentPiece.get_cells():
+            self.board[r][c] = 0
+
+        # If there's no held piece, store the current one and spawn a new piece
+        if self.holdPiece is None:
+            self.holdPiece = self.currentPiece
+            self.spawnPieces()  # Spawn new piece after first hold
+        else:
+            for r, c in self.holdPiece.get_cells():
+                self.board[r][c] = 0
+            # Swap current piece with the held one
+            self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
+            self.spawnHoldPiece()
+
+        # Update the hold piece preview
+        self.updateHoldGrid()
+
+    def updateHoldGrid(self):
+        """ Updates the hold piece grid for previewing the held piece. """
+        self.holdPieceGrid = [[0] * 4 for _ in range(2)]  # 2-row display
+
+        if not self.holdPiece:
+            return  # No piece held yet
+
+        type = self.holdPiece.type
+
+        # Centering offsets based on piece shape
+        center_offsets = {
+            'I': 0, 'J': 0, 'Z': 0,
+            'O': 1, 'T': 1,
+            'L': 2, 'S': 2
+        }
+        s_c = center_offsets.get(type, 1)  # Default to 1
+
+        # Generate a pseudo-positioned shape
+        self.holdPiece.shape = Piece.piece_shapes[self.holdPiece.type]
+        pseudo_shape = [(r, c + s_c) for r, c in self.holdPiece.shape]
+
+        # Ensure piece is placed within the 2-row grid
+        for r, c in pseudo_shape:
+            if 0 <= r < 2 and 0 <= c < 4:  # Prevent index errors
+                self.holdPieceGrid[r][c] = type
+
+        # Debugging output
+        # print("Hold Piece:", self.holdPiece.type)
+        # for row in self.holdPieceGrid:
+        #     print(row)
+
+    def spawnHoldPiece(self):
+        self.currentPiece = Piece(self.currentPiece.type)
+        for r, c in self.currentPiece.get_cells():
+            if self.board[r][c] != 0:  # Game over condition (spawn area occupied)
+                print("Game Over!")
+                pygame.quit()
+                exit()
+            else:
+                self.board[r][c] = self.currentPiece.type
 
     def dropPiece(self):
         current_positions = self.currentPiece.get_cells()
@@ -330,7 +479,7 @@ class GameState(): #10x20
                 current_positions = self.currentPiece.get_cells()  # Update current_positions to the new one
             else:
                 # Lock the piece in place and spawn a new piece
-                print("Locking piece")
+                # print("Locking piece")
                 self.placePiece()  # Lock the piece and spawn a new one
                 break  # Exit the loop since the piece has been locked
     
