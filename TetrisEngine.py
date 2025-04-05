@@ -6,11 +6,16 @@ from pygame.constants import SCRAP_SELECTION
 
 pygame.init()
 pygame.mixer.init()
-pygame.mixer.music.load('audio/TetrisMusic.mp3')
+pygame.mixer.music.load('assets/audio/TetrisMusic.mp3')
+ClearSFX = pygame.mixer.Sound("assets/audio/sfx/ClearLine.mp3")
+GameOverSFX = pygame.mixer.Sound("assets/audio/sfx/GameOver.mp3")
+RotationSFX = pygame.mixer.Sound("assets/audio/sfx/Rotation.mp3")
+TetrisSFX = pygame.mixer.Sound("assets/audio/sfx/TetrisClear.mp3")
 
+# Rebeca, Valeria
 class Graphics():
     def __init__(self):
-        self.pieces = []
+        #self.pieces = []
         self.screen_w = 300
         self.screen_h = 600
         self.rows = 20
@@ -184,6 +189,10 @@ class Graphics():
         game_over_w = self.screen_w
         game_over_h = (self.screen_w) * 9 // 16
 
+        self.stop_music()
+        self.music_paused = True
+        GameOverSFX.play()
+
         font = pygame.font.SysFont('Arial', 48)
         text = font.render('Game Over', True, (255, 255, 255))  # White text
         text2 = font.render(f'Score: {gs.score}', True, (255, 255, 255))  # White text
@@ -201,9 +210,10 @@ class Graphics():
                         screen.get_height() // 2 - text.get_height() // 2))  # Center the text
         pygame.display.flip()  # Update the display
 
+# Ana, Arturo
 class GameState(): #10x20
     def __init__(self):
-        self.board = [ #Tablero / grid
+        self.board = [ #Tablero / grid [[0]*10 for _ in range(20)]
             [0,0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0,0],
@@ -227,13 +237,15 @@ class GameState(): #10x20
         ]
         self.rows = 20
         self.cols = 10
-        self.log = [] # For training purposes
+        self.log = [] # For training purposes log[-1]
         self.images = ['I', 'O', 'T', 'L', 'J', 'S', 'Z']
         self.currentPiece = None
-        self.last_move_time = time.time()
-        self.updates = []
-        self.hold_used = False
         self.projected_coords = []
+
+        # Optimizing
+        self.init_board = None
+        self.init_time = None
+        self.last_score = 0
 
         # Piece placing criteria
         self.lock_delay = 0
@@ -241,11 +253,13 @@ class GameState(): #10x20
 
         # Flags
         self.score = 0
+        self.last_move_time = time.time()
+        self.hold_used = False
         self.is_paused = False
         self.game_ended = False
 
         # Next Pieces
-        self.nextPieces = []
+        self.nextPieces = [] # 'K' 'L' 'O'
         self.nextPiecesGrid = [
             [0,0,0,0], # Piece 1
             [0,0,0,0],
@@ -267,13 +281,37 @@ class GameState(): #10x20
 
         self.spawnPieces()
 
+    def getMoves(self): #optimize movements
+        moves = []
+
+        # Cantidad de rotaciones
+        rotations = self.log.count('r') % 4
+        if rotations > 0:
+            moves.extend(['r'] * abs(rotations))
+
+        # Cantidad de movimientos laterales
+        side_moves = self.log.count('L') - self.log.count('R')
+        if side_moves < 0:
+            moves.extend(['R'] * abs(side_moves))
+        elif side_moves > 0:
+            moves.extend(['L'] * abs(side_moves))
+
+        # Cantidad de movimientos hacia abajo
+        down = self.log.count('d')
+        if down > 0: moves.extend(['d'] * down)
+
+        if 'D' in self.log:
+            moves.extend('D')
+
+        return moves
+
     def spawnPieces(self):
         while len(self.nextPieces) < 4:
             new_piece = random.choice(self.images)
             self.nextPieces.append(Piece(new_piece))
 
-        self.currentPiece = self.nextPieces.pop(0)
-
+        self.currentPiece = self.nextPieces.pop(0) # 'K' 'L' 'O'
+        
         # Debugging
         # print(self.currentPiece.type, end = " // ")
         # print([k.type for k in self.nextPieces])
@@ -284,6 +322,9 @@ class GameState(): #10x20
 
         for r, c in self.currentPiece.get_cells():
             self.board[r][c] = self.currentPiece.type
+
+        self.init_time = time.time()
+        self.init_board = self.board
 
         # Spawn next pieces
         # Clear preview grid
@@ -351,7 +392,27 @@ class GameState(): #10x20
         for r, c in self.currentPiece.get_cells():
             if 0 <= r < self.rows and 0 <= c < self.cols:
                 self.board[r][c] = self.currentPiece.type
-        
+
+        turn_time = time.time() - self.init_time
+        moves = self.getMoves()
+        Next_pieces = [piece.type for piece in self.nextPieces]
+
+        # Puntaje obtenido en el turno
+        self.last_score = self.score - self.last_score
+
+        # Debugging
+        # print([self.currentPiece.type, Next_pieces, moves,
+        #        self.last_score, turn_time, self.hold_used, self.game_ended])
+
+        # IF self.holdPiece is not None
+        # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
+        #                          self.holdPiece.type, moves, self.last_score, turn_time,
+        #                          self.hold_used, self.game_ended)
+        # ELSE
+        # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
+        #                          None/Null, moves, self.last_score, turn_time,
+        #                          self.hold_used, self.game_ended)
+
         # Spawn a new piece
         self.clearFullRows()
         self.spawnPieces()
@@ -389,6 +450,11 @@ class GameState(): #10x20
                 self.board.pop(row)  # Remove the full row
                 self.board.insert(0, [0] * self.cols)  # Insert an empty row at the top
                 count += 1
+
+        if count == 4:
+            TetrisSFX.play()
+        elif count >= 1:
+            ClearSFX.play()
         self.score += 100*count
 
     def rotatePiece(self):
@@ -416,6 +482,7 @@ class GameState(): #10x20
         new_positions = self.currentPiece.get_cells(new_shape)
 
         if self.validate_rotation(new_positions):
+            RotationSFX.play()
             self.currentPiece.cells = new_positions
             self.currentPiece.shape = new_shape
             self.log.append('r') # as R is for Right
@@ -615,10 +682,11 @@ class GameState(): #10x20
                 # Lock the piece in place and spawn a new piece
                 # print("Locking piece")
                 self.log.append('D')
-                self.placePiece()  # Lock the piece and spawn a new one
                 self.score += 2*count
+                self.placePiece()  # Lock the piece and spawn a new one
                 break  # Exit the loop since the piece has been locked
-    
+
+#Jerry    
 class Piece():
     start_positions = {  # Initial spawn locations
         'I': (0, 3), 'O': (0, 4), 'T': (0, 4),
