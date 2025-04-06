@@ -1,7 +1,7 @@
 import pygame
 import random
 import time
-
+from database import  save_game
 from pygame.constants import SCRAP_SELECTION
 
 pygame.init()
@@ -257,7 +257,7 @@ class GameState(): #10x20
         self.hold_used = False
         self.is_paused = False
         self.game_ended = False
-
+        
         # Next Pieces
         self.nextPieces = [] # 'K' 'L' 'O'
         self.nextPiecesGrid = [
@@ -280,6 +280,7 @@ class GameState(): #10x20
         ]
 
         self.spawnPieces()
+
 
     def getMoves(self): #optimize movements
         moves = []
@@ -398,16 +399,20 @@ class GameState(): #10x20
         Next_pieces = [piece.type for piece in self.nextPieces]
 
         # Puntaje obtenido en el turno
-        self.last_score = self.score - self.last_score
+        self.last_move_score = self.score - self.last_score
 
         # Debugging
         # print([self.currentPiece.type, Next_pieces, moves,
         #        self.last_score, turn_time, self.hold_used, self.game_ended])
 
-        # IF self.holdPiece is not None
-        # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
-        #                          self.holdPiece.type, moves, self.last_score, turn_time,
-        #                          self.hold_used, self.game_ended)
+        if self.holdPiece is not None:
+            save_game(self.init_board, self.board, self.currentPiece.type, Next_pieces,
+                                 self.holdPiece.type, moves, self.last_move_score,
+                                 self.hold_used, self.game_ended)
+        else:
+            save_game(self.init_board, self.board, self.currentPiece.type, Next_pieces,
+                                 None, moves, self.last_move_score,
+                                 self.hold_used, self.game_ended)
         # ELSE
         # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
         #                          None/Null, moves, self.last_score, turn_time,
