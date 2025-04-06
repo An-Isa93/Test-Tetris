@@ -319,6 +319,14 @@ class GameState(): #10x20
         if any(self.board[r][c] != 0 for r,c in self.currentPiece.get_cells()):
             print("Game Over!")
             self.game_ended = True # pygame.quit()
+            if self.holdPiece is not None:
+                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                 self.holdPiece.type, self.moves, self.last_move_score,
+                                 self.hold_used, self.game_ended)
+            else:
+                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                 None, self.moves, self.last_move_score,
+                                 self.hold_used, self.game_ended)
             return
 
         for r, c in self.currentPiece.get_cells():
@@ -395,8 +403,8 @@ class GameState(): #10x20
                 self.board[r][c] = self.currentPiece.type
 
         turn_time = time.time() - self.init_time
-        moves = self.getMoves()
-        Next_pieces = [piece.type for piece in self.nextPieces]
+        self.moves = self.getMoves()
+        self. Next_pieces = [piece.type for piece in self.nextPieces]
 
         # Puntaje obtenido en el turno
         self.last_move_score = self.score - self.last_score
@@ -406,12 +414,12 @@ class GameState(): #10x20
         #        self.last_score, turn_time, self.hold_used, self.game_ended])
 
         if self.holdPiece is not None:
-            save_game(self.init_board, self.board, self.currentPiece.type, Next_pieces,
-                                 self.holdPiece.type, moves, self.last_move_score,
+            save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                 self.holdPiece.type, self.moves, self.last_move_score,
                                  self.hold_used, self.game_ended)
         else:
-            save_game(self.init_board, self.board, self.currentPiece.type, Next_pieces,
-                                 None, moves, self.last_move_score,
+            save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                 None, self.moves, self.last_move_score,
                                  self.hold_used, self.game_ended)
         # ELSE
         # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,

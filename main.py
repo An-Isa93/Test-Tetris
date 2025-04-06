@@ -1,4 +1,4 @@
 import TetrisEngine
-tetris = TetrisEngine.Graphics()
+tetris = TetrisEngine.Graphics() 
 
 tetris.main() 
