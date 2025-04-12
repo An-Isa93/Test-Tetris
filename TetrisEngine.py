@@ -1,7 +1,7 @@
 import pygame
 import random
 import time
-from database import  save_game
+from services.database import  save_game
 from pygame.constants import SCRAP_SELECTION
 
 pygame.init()
@@ -39,9 +39,62 @@ class Graphics():
         self.side_rows = 8
         self.side_cols = 4
 
-    def main(self):
+    def drawStartScreen(self):
         screen = pygame.display.set_mode((self.screen_w + self.side_width * 2,
                                           self.screen_h + self.TILE_SIZE * 2))
+        screen.fill(pygame.Color("black"))
+
+        font = pygame.font.SysFont('Arial', 64)
+        text = font.render('Tetris', True, (255, 255, 255))  # White text
+        font = pygame.font.SysFont('Arial', 48)
+        text2 = font.render('Start', True, (0, 0, 0))  # Black text
+        text3 = font.render('Auto-play', True, (0,0,0))
+        
+        # TITLE
+        screen.blit(text, (self.side_width + self.screen_w // 2 - text.get_width() // 2, 
+                        screen.get_height() // 2 - text.get_height() // 2 - 200))  # Center the text
+        
+        # BUTTON 1
+        pygame.draw.rect(screen, pygame.Color('grey73'),
+                         pygame.Rect(self.side_width + self.screen_w // 2 - text3.get_width() // 2 - 29,
+                                     screen.get_height() // 2 - text3.get_height() // 2,
+                                     240, 60))
+        screen.blit(text2, (self.side_width + self.screen_w // 2 - text2.get_width() // 2, 
+                        screen.get_height() // 2 - text2.get_height() // 2))  # Center the text
+        
+        # BUTTON 2
+        pygame.draw.rect(screen, pygame.Color('grey73'),
+                         pygame.Rect(self.side_width + self.screen_w // 2 - text3.get_width() // 2 - 29,
+                                     screen.get_height() // 2 - text3.get_height() // 2 + 200,
+                                     240, 60))
+        screen.blit(text3, (self.side_width + self.screen_w // 2 - text3.get_width() // 2, 
+                        screen.get_height() // 2 - text3.get_height() // 2 + 200))  # Center the text
+
+        pygame.display.flip()  # Update the display
+
+        waiting = True
+
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    location = pygame.mouse.get_pos()
+                    col = location[0]
+                    row = location[1]
+
+                    if (305 <= row <= 365) and (281 <= col <= 521):
+                        #print("Startgame selected")
+                        waiting = False  # Salir del bucle cuando se presiona una tecla / Continuar con el juego
+                        self.main()
+                    elif (505 <= row <= 565) and (281 <= col <= 521):
+                        # AUTO-PLAY (AI)
+                        #print("Autoplay selected")
+                        pass
+
+    def main(self):
+        screen = pygame.display.get_surface()
         clock = pygame.time.Clock()
         screen.fill(pygame.Color("grey73"))
         gs = GameState()
@@ -103,8 +156,15 @@ class Graphics():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         exit()
-                    elif event.type == pygame.KEYDOWN:
-                        waiting = False  # Salir del bucle cuando se presiona una tecla
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        location = pygame.mouse.get_pos()
+                        col = location[0]
+                        row = location[1]
+
+                        if (390 <= row <= 450) and (280 <= col <= 520): #(280 <= col <= 520)
+                            del(gs)
+                            waiting = False  # Salir del bucle cuando se presiona una tecla
+                            self.drawStartScreen()
 
     def play_music(self):
         pygame.mixer.music.unpause()
@@ -196,6 +256,7 @@ class Graphics():
         font = pygame.font.SysFont('Arial', 48)
         text = font.render('Game Over', True, (255, 255, 255))  # White text
         text2 = font.render(f'Score: {gs.score}', True, (255, 255, 255))  # White text
+        text3 = font.render('Play again', True, (0,0,0))
         screen = pygame.display.get_surface()
 
         overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)  # Transparent surface
@@ -206,8 +267,17 @@ class Graphics():
         
         screen.blit(text, (self.side_width + game_over_w // 2 - text.get_width() // 2, 
                         screen.get_height() // 2 - text.get_height() // 2 - game_over_h // 2))  # Center the text
-        screen.blit(text2, (self.side_width + game_over_w // 2 - text.get_width() // 2, 
-                        screen.get_height() // 2 - text.get_height() // 2))  # Center the text
+        screen.blit(text2, (self.side_width + game_over_w // 2 - text2.get_width() // 2, 
+                        screen.get_height() // 2 - text2.get_height() // 2))  # Center the text
+        
+        pygame.draw.rect(screen, pygame.Color('grey73'),
+                         pygame.Rect(self.side_width + game_over_w // 2 - text3.get_width() // 2 - 29,
+                                     screen.get_height() // 2 - text3.get_height() // 2 + game_over_h // 2,
+                                     240, 60))
+        
+        screen.blit(text3, (self.side_width + game_over_w // 2 - text3.get_width() // 2, 
+                        screen.get_height() // 2 - text3.get_height() // 2 + game_over_h // 2))  # Center the text
+
         pygame.display.flip()  # Update the display
 
 # Ana, Arturo
