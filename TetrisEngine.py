@@ -42,39 +42,86 @@ class Graphics():
     def drawStartScreen(self):
         screen = pygame.display.set_mode((self.screen_w + self.side_width * 2,
                                           self.screen_h + self.TILE_SIZE * 2))
-        screen.fill(pygame.Color("black"))
+        screen.fill(pygame.Color("#929292"))
 
-        font = pygame.font.SysFont('Arial', 64)
-        text = font.render('Tetris', True, (255, 255, 255))  # White text
-        font = pygame.font.SysFont('Arial', 48)
-        text2 = font.render('Start', True, (0, 0, 0))  # Black text
+        font = pygame.font.Font("fonts/BungeeTint-Regular.ttf", 120)
+        text = font.render('Tetris', True, (255, 255, 255))  
+        font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 28)
+        text2 = font.render('Start', True, (0, 0, 0))  
         text3 = font.render('Auto-play', True, (0,0,0))
+        border_color = pygame.Color('black')
         
         # TITLE
         screen.blit(text, (self.side_width + self.screen_w // 2 - text.get_width() // 2, 
                         screen.get_height() // 2 - text.get_height() // 2 - 200))  # Center the text
         
         # BUTTON 1
-        pygame.draw.rect(screen, pygame.Color('grey73'),
-                         pygame.Rect(self.side_width + self.screen_w // 2 - text3.get_width() // 2 - 29,
-                                     screen.get_height() // 2 - text3.get_height() // 2,
-                                     240, 60))
-        screen.blit(text2, (self.side_width + self.screen_w // 2 - text2.get_width() // 2, 
-                        screen.get_height() // 2 - text2.get_height() // 2))  # Center the text
+        button1_rect = pygame.Rect(
+            self.side_width + self.screen_w // 2 - 125,  # 125 = 250 // 2
+            screen.get_height() // 2 - 30,              # 30 = 60 // 2
+            250, 60
+        )
+        border1 = button1_rect.inflate(6,6)
+        pygame.draw.rect(screen, border_color, border1)
+        pygame.draw.rect(screen, pygame.Color('#c1c0c0'), button1_rect)
+
+        text2_pos = (
+            button1_rect.x + (button1_rect.width - text2.get_width()) // 2,
+            button1_rect.y + (button1_rect.height - text2.get_height()) // 2
+        )
+        screen.blit(text2, text2_pos)
         
         # BUTTON 2
-        pygame.draw.rect(screen, pygame.Color('grey73'),
-                         pygame.Rect(self.side_width + self.screen_w // 2 - text3.get_width() // 2 - 29,
-                                     screen.get_height() // 2 - text3.get_height() // 2 + 200,
-                                     240, 60))
-        screen.blit(text3, (self.side_width + self.screen_w // 2 - text3.get_width() // 2, 
-                        screen.get_height() // 2 - text3.get_height() // 2 + 200))  # Center the text
+        button2_rect = pygame.Rect(
+            self.side_width + self.screen_w // 2 - 120,  # 120 = 240 // 2
+            screen.get_height() // 2 - 30 + 200,
+            250, 60
+        )
+        border2 = button2_rect.inflate(6,6)
+        pygame.draw.rect(screen, border_color, border2)
+        pygame.draw.rect(screen, pygame.Color('#c1c0c0'), button2_rect)
 
-        pygame.display.flip()  # Update the display
+        text3_pos = (
+            button2_rect.x + (button2_rect.width - text3.get_width()) // 2,
+            button2_rect.y + (button2_rect.height - text3.get_height()) // 2
+        )
+        screen.blit(text3, text3_pos)
+
 
         waiting = True
-
+        colors = [
+            pygame.Color("cyan"), pygame.Color("blue"), pygame.Color("orange"),
+            pygame.Color("yellow"), pygame.Color("green"), pygame.Color("purple"),
+            pygame.Color("red")
+            ]
+        
+        last_color_change = pygame.time.get_ticks()  # Save initial time 
+        color_change_interval = 300
+        current_color=random.choice(colors)
         while waiting:
+            screen_width, screen_height = screen.get_size()
+            TILE_SIZE = 30
+            
+            current_time = pygame.time.get_ticks()
+            if current_time - last_color_change >= color_change_interval:
+                last_color_change = current_time  # Update time of last change
+                current_color = random.choice(colors)  # Change random color 
+
+            #borders 
+            for x in range(0, screen_width + TILE_SIZE, TILE_SIZE):
+                for y in [0, screen_height - TILE_SIZE]:
+                    rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                    pygame.draw.rect(screen,current_color, rect)  
+                    pygame.draw.rect(screen, pygame.Color("black"), rect, 1) 
+            
+            for y in range(0, screen_height + TILE_SIZE, TILE_SIZE):
+                for x in [0, screen_width - TILE_SIZE]:
+                    rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                    pygame.draw.rect(screen, current_color, rect)  
+                    pygame.draw.rect(screen, pygame.Color("black"), rect, 1) 
+            
+            pygame.display.flip()  # Update the display
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -173,7 +220,7 @@ class Graphics():
         pygame.mixer.music.pause()
 
     def show_pause_screen(self):
-        font = pygame.font.SysFont('Arial', 48)
+        font = pygame.font.Font("fonts/BungeeShade-Regular.ttf", 72)
         text = font.render('Paused', True, (255, 255, 255))  # White text
         screen = pygame.display.get_surface()
         screen.fill((0, 0, 0))  # Fill the screen with black
@@ -212,7 +259,7 @@ class Graphics():
                                 (self.TILE_SIZE*2 + (self.screen_h // 2) + 35),
                                 self.TILE_SIZE * 4 + 10, self.TILE_SIZE * 3))
         
-        font = pygame.font.SysFont('Arial', 48)
+        font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 40)
         text = font.render(str(gs.score), True, (0,0,0))  # White text
         screen.blit(text, (self.side_width // 2 - 75 + (self.TILE_SIZE * 4 + 10 - text.get_width()) // 2, 
                         (self.TILE_SIZE*2 + (self.screen_h // 2) + 50)))
@@ -226,7 +273,7 @@ class Graphics():
                                 self.TILE_SIZE, self.TILE_SIZE))            
     
     def drawBorder(self, screen):
-        font = pygame.font.SysFont('Arial', 48)
+        font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 40)
         text = font.render('Hold', True, (255, 255, 255))  # White text
         screen.blit(text, (self.side_width // 2 - text.get_width() // 2 - 10, 
                         (self.TILE_SIZE*2 + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE)) // 2 - text.get_height() // 2))
@@ -253,10 +300,11 @@ class Graphics():
         self.music_paused = True
         GameOverSFX.play()
 
-        font = pygame.font.SysFont('Arial', 48)
+        font = pygame.font.Font("fonts/BungeeShade-Regular.ttf", 70)
+        font2 = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 28)
         text = font.render('Game Over', True, (255, 255, 255))  # White text
         text2 = font.render(f'Score: {gs.score}', True, (255, 255, 255))  # White text
-        text3 = font.render('Play again', True, (0,0,0))
+        text3 = font2.render('Play again', True, (0,0,0))
         screen = pygame.display.get_surface()
 
         overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)  # Transparent surface
@@ -270,13 +318,19 @@ class Graphics():
         screen.blit(text2, (self.side_width + game_over_w // 2 - text2.get_width() // 2, 
                         screen.get_height() // 2 - text2.get_height() // 2))  # Center the text
         
-        pygame.draw.rect(screen, pygame.Color('grey73'),
-                         pygame.Rect(self.side_width + game_over_w // 2 - text3.get_width() // 2 - 29,
-                                     screen.get_height() // 2 - text3.get_height() // 2 + game_over_h // 2,
-                                     240, 60))
-        
-        screen.blit(text3, (self.side_width + game_over_w // 2 - text3.get_width() // 2, 
-                        screen.get_height() // 2 - text3.get_height() // 2 + game_over_h // 2))  # Center the text
+        button3_rect = pygame.Rect(self.side_width + game_over_w // 2 - 250 // 2,
+        screen.get_height() // 2 - 60 // 2 + game_over_h // 2, 250,60)
+
+        border3 = button3_rect.inflate(6,6)
+        pygame.draw.rect(screen,"black", border3)
+        pygame.draw.rect(screen, "grey73", button3_rect)
+
+        # Centrar el texto dentro del botón
+        text3_pos = (
+            button3_rect.x + (button3_rect.width - text3.get_width()) // 2,
+            button3_rect.y + (button3_rect.height - text3.get_height()) // 2
+        )
+        screen.blit(text3, text3_pos)
 
         pygame.display.flip()  # Update the display
 
