@@ -1,16 +1,24 @@
 import pygame
 import random
 import time
+import joblib
+import json
+import numpy as np
 from services.database import  save_game
 from pygame.constants import SCRAP_SELECTION
+from tf_keras.models import load_model
+from sklearn.preprocessing import LabelEncoder
 
 pygame.init()
 pygame.mixer.init()
-pygame.mixer.music.load('assets/audio/TetrisMusic.mp3')
 ClearSFX = pygame.mixer.Sound("assets/audio/sfx/ClearLine.mp3")
 GameOverSFX = pygame.mixer.Sound("assets/audio/sfx/GameOver.mp3")
 RotationSFX = pygame.mixer.Sound("assets/audio/sfx/Rotation.mp3")
 TetrisSFX = pygame.mixer.Sound("assets/audio/sfx/TetrisClear.mp3")
+
+le_piece = LabelEncoder()
+le_move = LabelEncoder()
+le_piece.fit(['I', 'O', 'T', 'S', 'Z', 'J', 'L', 'none'])
 
 # Rebeca, Valeria
 class Graphics():
@@ -39,7 +47,9 @@ class Graphics():
         self.side_rows = 8
         self.side_cols = 4
 
-    def drawStartScreen(self):
+    def drawTitleScreen(self):
+        pygame.mixer.music.load('assets/audio/TitleScreenMusic.mp3')
+        pygame.mixer.music.play(-1)
         screen = pygame.display.set_mode((self.screen_w + self.side_width * 2,
                                           self.screen_h + self.TILE_SIZE * 2))
         screen.fill(pygame.Color("#929292"))
@@ -134,13 +144,16 @@ class Graphics():
                     if (305 <= row <= 365) and (281 <= col <= 521):
                         #print("Startgame selected")
                         waiting = False  # Salir del bucle cuando se presiona una tecla / Continuar con el juego
+                        pygame.mixer.music.stop()
                         self.main()
                     elif (505 <= row <= 565) and (281 <= col <= 521):
                         # AUTO-PLAY (AI)
+                        self.main('AI')
                         #print("Autoplay selected")
                         pass
 
-    def main(self):
+    def main(self, mode=None):
+        pygame.mixer.music.load('assets/audio/TetrisMusic.mp3')
         screen = pygame.display.get_surface()
         clock = pygame.time.Clock()
         screen.fill(pygame.Color("grey73"))
@@ -149,6 +162,9 @@ class Graphics():
         self.draw_sides(screen, gs)
         pygame.mixer.music.play(-1)
         running = True
+        if mode == 'AI':
+            gs.auto_play()
+            running = False
         while(running):
             clock.tick(60)
             for action in pygame.event.get():
@@ -211,7 +227,8 @@ class Graphics():
                         if (390 <= row <= 450) and (280 <= col <= 520): #(280 <= col <= 520)
                             del(gs)
                             waiting = False  # Salir del bucle cuando se presiona una tecla
-                            self.drawStartScreen()
+                            pygame.mixer.music.stop()
+                            self.drawTitleScreen()
 
     def play_music(self):
         pygame.mixer.music.unpause()
@@ -259,7 +276,8 @@ class Graphics():
                                 (self.TILE_SIZE*2 + (self.screen_h // 2) + 35),
                                 self.TILE_SIZE * 4 + 10, self.TILE_SIZE * 3))
         
-        font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 40)
+        #font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 40)
+        font = pygame.font.SysFont("Arial", 48)
         text = font.render(str(gs.score), True, (0,0,0))  # White text
         screen.blit(text, (self.side_width // 2 - 75 + (self.TILE_SIZE * 4 + 10 - text.get_width()) // 2, 
                         (self.TILE_SIZE*2 + (self.screen_h // 2) + 50)))
@@ -281,7 +299,7 @@ class Graphics():
         screen.blit(text2, (self.side_width // 2 - text.get_width() // 2 + self.side_width + self.screen_w, 
                         (self.TILE_SIZE*2 + (self.screen_h // 2 - self.side_rows * self.TILE_SIZE)) // 2 - text.get_height() // 2))
         text3 = font.render('Score', True, (255, 255, 255))  # White text
-        screen.blit(text3, (self.side_width // 2 - text.get_width() // 2 - 20, 
+        screen.blit(text3, (self.side_width // 2 - text.get_width() // 2 - 30, 
                         (self.TILE_SIZE*2 + (self.screen_h // 2)) - text.get_height() // 2))
 
         for row in range(self.rows+2):
@@ -403,8 +421,10 @@ class GameState(): #10x20
             [0,0,0,0]
         ]
 
-        self.spawnPieces()
+        # Difficulty increment
+        self.SPEED_FACTOR = 1
 
+        self.spawnPieces()
 
     def getMoves(self): #optimize movements
         moves = []
@@ -424,6 +444,9 @@ class GameState(): #10x20
         # Cantidad de movimientos hacia abajo
         down = self.log.count('d')
         if down > 0: moves.extend(['d'] * down)
+
+        if 'C' in self.log:
+            moves.extend('C')
 
         if 'D' in self.log:
             moves.extend('D')
@@ -499,7 +522,13 @@ class GameState(): #10x20
         if self.game_ended:
             return
 
-        if time.time() - self.last_move_time > 1:
+        last_speed = self.SPEED_FACTOR
+        self.SPEED_FACTOR = 1 - 0.1*(self.score // 1000)
+
+        if self.SPEED_FACTOR <= 0.10: self.SPEED_FACTOR = 0.10
+        if last_speed != self.SPEED_FACTOR: print(f"New gravity speed: {self.SPEED_FACTOR}")
+
+        if time.time() - self.last_move_time > 1 * self.SPEED_FACTOR:
             self.last_move_time = time.time()
 
             if all((r < self.rows and self.board[r][c] == 0) or ((r,c) in current_positions) for r, c in new_positions): 
@@ -543,7 +572,7 @@ class GameState(): #10x20
                                  self.hold_used, self.game_ended)
         else:
             save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
-                                 None, self.moves, self.last_move_score,
+                                 'none', self.moves, self.last_move_score,
                                  self.hold_used, self.game_ended)
         # ELSE
         # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
@@ -822,6 +851,71 @@ class GameState(): #10x20
                 self.score += 2*count
                 self.placePiece()  # Lock the piece and spawn a new one
                 break  # Exit the loop since the piece has been locked
+
+    # AUTO-PLAY
+    def auto_play(self):
+        gpx = Graphics()
+
+        model = load_model('models/tetris_AI.h5')
+        tokenizer = joblib.load("models/tokenizer.pkl")
+
+        while not self.game_ended:
+            X_input = self.prepare_input()
+            predicted_probs = model.predict(X_input)
+            predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
+
+            decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
+
+            print(decoded_moves, "***************************************")
+
+            for move in decoded_moves:
+                if time.time() - self.last_move_time > 0.3:
+                    self.last_move_time = time.time()
+                    if move == 'R':
+                        self.moveRight()
+                    elif move == 'L':
+                        self.moveLeft()
+                    elif move == 'D':
+                        self.dropPiece()
+                    elif move == 'd':
+                        self.moveDown()
+                    elif move == 'r':
+                        self.rotatePiece()
+                    elif move == 'C':
+                        self.hold_Piece()
+                    self.update()
+                    gpx.drawBoard(pygame.display.get_surface(), self)
+                    pygame.display.flip()
+
+    def piece_to_int(self, piece):
+        piece_map = {
+            0: 0,  # Vacío
+            'I': 1,  # Pieza I
+            'L': 2,  # Pieza L
+            'J': 3,  # Pieza J
+            'O': 4,  # Pieza O
+            'S': 5,  # Pieza S
+            'Z': 6,  # Pieza Z
+            'T': 7   # Pieza T
+        }
+        # Puedes hacer un mapeo de piezas específicas a enteros, por ejemplo:
+        return piece_map.get(piece, 0)
+
+    def process_board(self):
+        # Asegúrate de que `board` es una lista de listas, que representa el tablero
+        processed_board = [self.piece_to_int(piece) for row in self.board for piece in row]
+        return np.array(processed_board)
+
+    def prepare_input(self):
+        board_flat = self.process_board()
+
+        current_encoded = le_piece.transform([self.currentPiece.type])[0]
+        next_encoded = le_piece.transform([self.nextPieces[-1].type])[0]
+        hold_encoded = le_piece.transform([self.holdPiece.type if self.holdPiece else 'none'])[0]
+        hold_used = int(self.hold_used)
+
+        X_input = np.hstack([board_flat, current_encoded, next_encoded, hold_encoded, hold_used])
+        return X_input.reshape(1, -1)
 
 #Jerry    
 class Piece():

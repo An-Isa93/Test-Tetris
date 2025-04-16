@@ -81,6 +81,25 @@ def get_all_games():
 
     conn.close()
     return games_dict
+
+def get_db_size(): # Cantidad de registros en la tabla
+    conn=sqlite3.connect("tetris.db")
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM games')
+    games = cursor.fetchall()
+    print(len(games))
+    cursor.close()
+
+def truncate_table():
+    conn=sqlite3.connect("tetris.db")
+    cursor = conn.cursor()
+    # TRUNCATE TABLE
+    cursor.execute('DELETE FROM games')  # This deletes all rows
+    conn.commit()
+    #get_db_size()
+    conn.close()
+    pass
+
 #View registers
 """games = get_all_games()
 
