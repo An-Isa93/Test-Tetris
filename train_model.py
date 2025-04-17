@@ -10,8 +10,15 @@ from sklearn.preprocessing import LabelEncoder
 from tf_keras.preprocessing.text import Tokenizer
 from tf_keras.preprocessing.sequence import pad_sequences
 from tf_keras.backend import clear_session
+from tf_keras.callbacks import EarlyStopping
 import joblib
 from services.model import create_model  # Importamos desde archivo externo
+
+early_stopping = EarlyStopping(
+    monitor='val_loss',      # Monitor validation loss
+    patience=5,              # Stop after 5 epochs with no improvement
+    restore_best_weights=True  # Restore weights from the best epoch
+)
 
 piece_map = {
     0: 0,  # Vacío
@@ -37,6 +44,7 @@ def load_data():
     df = pd.read_sql_query("SELECT * FROM games", conn)
     conn.close()
 
+    print(df['moves'])
     print(df.head())
     print(df.describe())
 
@@ -90,24 +98,25 @@ def load_data():
     y = pad_sequences(sequences, maxlen=max_seq_len, padding='post')
     y = np.expand_dims(y, -1)  # (samples, seq_len, 1)
 
-    return X, y, max_seq_len, tokenizer
+    return X, y, max_seq_len, tokenizer, le_piece
 
 
 def main():
-    X, y, max_seq_len, tokenizer = load_data()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    X, y, max_seq_len, tokenizer, le_piece = load_data()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     model = create_model(X.shape[1], output_dim=len(tokenizer.word_index) + 1, max_seq_len=max_seq_len)
 
     print("X_train.type:", X_train.dtype)  # Debería ser float o int
     print("y_train.type:", y_train.dtype) 
 
-    model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.1)
+    model.fit(X_train, y_train, epochs=15, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
 
     model.evaluate(X_test, y_test)
 
     model.save("models/tetris_AI.h5")
     joblib.dump(tokenizer, "models/tokenizer.pkl")
+    joblib.dump(le_piece, "models/label_encoder.pkl")
 
 
 if __name__ == '__main__':

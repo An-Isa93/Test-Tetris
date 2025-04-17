@@ -151,6 +151,11 @@ class Graphics():
                         self.main('AI')
                         #print("Autoplay selected")
                         pass
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        waiting = False  # Salir del bucle cuando se presiona una tecla
+                        pygame.mixer.music.stop()
+                        self.main()
 
     def main(self, mode=None):
         pygame.mixer.music.load('assets/audio/TetrisMusic.mp3')
@@ -225,6 +230,12 @@ class Graphics():
                         row = location[1]
 
                         if (390 <= row <= 450) and (280 <= col <= 520): #(280 <= col <= 520)
+                            del(gs)
+                            waiting = False  # Salir del bucle cuando se presiona una tecla
+                            pygame.mixer.music.stop()
+                            self.drawTitleScreen()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
                             del(gs)
                             waiting = False  # Salir del bucle cuando se presiona una tecla
                             pygame.mixer.music.stop()
@@ -556,7 +567,7 @@ class GameState(): #10x20
                 self.board[r][c] = self.currentPiece.type
 
         turn_time = time.time() - self.init_time
-        self.moves = self.getMoves()
+        self.moves = self.log #self.getMoves()
         self. Next_pieces = [piece.type for piece in self.nextPieces]
 
         # Puntaje obtenido en el turno
@@ -855,37 +866,47 @@ class GameState(): #10x20
     # AUTO-PLAY
     def auto_play(self):
         gpx = Graphics()
+        clock = pygame.time.Clock()
+        clock.tick(60)
+        gpx.drawBoard(pygame.display.get_surface(), self)
+        pygame.display.flip()
 
         model = load_model('models/tetris_AI.h5')
         tokenizer = joblib.load("models/tokenizer.pkl")
 
         while not self.game_ended:
+            last_time = time.time()
             X_input = self.prepare_input()
             predicted_probs = model.predict(X_input)
-            predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
 
+            predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
             decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
 
             print(decoded_moves, "***************************************")
 
+            #for move in decoded_moves:
+            i = 0
+            print(len(decoded_moves), "+++++++++++++++++++++++++++++++++++++++")
             for move in decoded_moves:
-                if time.time() - self.last_move_time > 0.3:
-                    self.last_move_time = time.time()
-                    if move == 'R':
-                        self.moveRight()
-                    elif move == 'L':
-                        self.moveLeft()
-                    elif move == 'D':
-                        self.dropPiece()
-                    elif move == 'd':
-                        self.moveDown()
-                    elif move == 'r':
-                        self.rotatePiece()
-                    elif move == 'C':
-                        self.hold_Piece()
-                    self.update()
-                    gpx.drawBoard(pygame.display.get_surface(), self)
-                    pygame.display.flip()
+                #if time.time() - self.last_move_time > 0.5:
+                #move = decoded_moves[i]
+                print(move, "///////////////////////////")
+                if move == 'R':
+                    self.moveRight()
+                elif move == 'L':
+                    self.moveLeft()
+                elif move == 'D':
+                    self.dropPiece()
+                elif move == 'd':
+                    self.moveDown()
+                elif move == 'r':
+                    self.rotatePiece()
+                elif move == 'C':
+                    self.hold_Piece()
+                i += 1
+            self.update()
+            gpx.drawBoard(pygame.display.get_surface(), self)
+            pygame.display.flip()
 
     def piece_to_int(self, piece):
         piece_map = {
@@ -907,6 +928,7 @@ class GameState(): #10x20
         return np.array(processed_board)
 
     def prepare_input(self):
+        le_piece = joblib.load("models/label_encoder.pkl")
         board_flat = self.process_board()
 
         current_encoded = le_piece.transform([self.currentPiece.type])[0]
