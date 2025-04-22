@@ -101,7 +101,7 @@ def truncate_table():
     pass
 
 #View registers
-"""games = get_all_games()
+games = get_all_games()
 
 for game in games:
     print(f"ID: {game['id']}")
@@ -115,4 +115,4 @@ for game in games:
     print(f"Elapsed Time: {game['elapsed_time']}")
     print(f"Hold Used: {game['hold_used']}")
     print(f"Game Ended: {game['game_ended']}")
-    print("---")"""
+    print("---")

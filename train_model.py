@@ -110,13 +110,22 @@ def main():
     print("X_train.type:", X_train.dtype)  # Debería ser float o int
     print("y_train.type:", y_train.dtype) 
 
-    model.fit(X_train, y_train, epochs=15, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
+    history = model.fit(X_train, y_train, epochs=15, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
+
+    y_pred = model.predict(X_test)
+    y_pred_classes = np.argmax(y_pred, axis=-1)
+    y_test_classes = np.argmax(y_test, axis=-1)
+
+    # Guardar las predicciones y los valores reales
+    np.save('models/y_test.npy', y_test_classes)
+    np.save('models/y_pred.npy', y_pred_classes)
 
     model.evaluate(X_test, y_test)
 
     model.save("models/tetris_AI.h5")
     joblib.dump(tokenizer, "models/tokenizer.pkl")
     joblib.dump(le_piece, "models/label_encoder.pkl")
+    joblib.dump(history.history, "models/train_history.pkl")
 
 
 if __name__ == '__main__':
