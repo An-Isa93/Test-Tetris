@@ -11,6 +11,8 @@ from sklearn.preprocessing import LabelEncoder
 
 pygame.init()
 pygame.mixer.init()
+# MAKE NEXT LINE A COMMENT TO LISTEN TO MUSIC
+pygame.mixer.music.set_volume(0)
 ClearSFX = pygame.mixer.Sound("assets/audio/sfx/ClearLine.mp3")
 GameOverSFX = pygame.mixer.Sound("assets/audio/sfx/GameOver.mp3")
 RotationSFX = pygame.mixer.Sound("assets/audio/sfx/Rotation.mp3")
@@ -410,6 +412,7 @@ class GameState(): #10x20
         self.hold_used = False
         self.is_paused = False
         self.game_ended = False
+        self.AI_playing = False
         
         # Next Pieces
         self.nextPieces = [] # 'K' 'L' 'O'
@@ -576,15 +579,15 @@ class GameState(): #10x20
         # Debugging
         # print([self.currentPiece.type, Next_pieces, moves,
         #        self.last_score, turn_time, self.hold_used, self.game_ended])
-
-        if self.holdPiece is not None:
-            save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
-                                 self.holdPiece.type, self.moves, self.last_move_score,
-                                 self.hold_used, self.game_ended)
-        else:
-            save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
-                                 'none', self.moves, self.last_move_score,
-                                 self.hold_used, self.game_ended)
+        if not self.AI_playing: # PREVENTS FROM MAKING UNOPTIMIZED INSERTS WHILE TRAINING
+            if self.holdPiece is not None:
+                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                    self.holdPiece.type, self.moves, self.last_move_score,
+                                    self.hold_used, self.game_ended)
+            else:
+                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                    'none', self.moves, self.last_move_score,
+                                    self.hold_used, self.game_ended)
         # ELSE
         # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
         #                          None/Null, moves, self.last_score, turn_time,
@@ -595,6 +598,9 @@ class GameState(): #10x20
         self.spawnPieces()
         self.log.clear()
         self.hold_used = False
+
+        if self.AI_playing:
+            self.auto_play()
 
     def getProjection(self):
         # Clone the current piece to avoid modifying the original
@@ -783,8 +789,8 @@ class GameState(): #10x20
             self.holdPiece = self.currentPiece
             self.spawnPieces()  # Spawn new piece after first hold
         else:
-            for r, c in self.holdPiece.get_cells():
-                self.board[r][c] = 0
+            # for r, c in self.holdPiece.get_cells():
+            #     self.holdPieceGrid[r][c] = 0
             # Swap current piece with the held one
             self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
             self.spawnHoldPiece()
@@ -865,48 +871,151 @@ class GameState(): #10x20
 
     # AUTO-PLAY
     def auto_play(self):
+        self.AI_playing = True
         gpx = Graphics()
         clock = pygame.time.Clock()
-        clock.tick(60)
-        gpx.drawBoard(pygame.display.get_surface(), self)
-        pygame.display.flip()
-
         model = load_model('models/tetris_AI.h5')
         tokenizer = joblib.load("models/tokenizer.pkl")
 
+        index_to_word = {
+            1: 'R', 2: 'L', 3: 'r', 4: 'D', 5: 'C', 6: 'd'
+        }
+
         while not self.game_ended:
-            last_time = time.time()
-            X_input = self.prepare_input()
-            predicted_probs = model.predict(X_input)
-
-            predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
-            decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
-
-            print(decoded_moves, "***************************************")
-
-            #for move in decoded_moves:
-            i = 0
-            print(len(decoded_moves), "+++++++++++++++++++++++++++++++++++++++")
-            for move in decoded_moves:
-                #if time.time() - self.last_move_time > 0.5:
-                #move = decoded_moves[i]
-                print(move, "///////////////////////////")
-                if move == 'R':
-                    self.moveRight()
-                elif move == 'L':
-                    self.moveLeft()
-                elif move == 'D':
-                    self.dropPiece()
-                elif move == 'd':
-                    self.moveDown()
-                elif move == 'r':
-                    self.rotatePiece()
-                elif move == 'C':
-                    self.hold_Piece()
-                i += 1
-            self.update()
+            # Draw the board
             gpx.drawBoard(pygame.display.get_surface(), self)
             pygame.display.flip()
+
+            # Prediction for current piece
+            X_input = self.prepare_input()
+            print("Prepared input shape:", X_input.shape)  # Debug input shape
+            predicted_probs = model.predict(X_input)
+
+            # Decode the predicted move(s)
+            predicted_ids = np.argmax(predicted_probs[0], axis=-1)  # Adjust if output is multi-dimensional
+            print(f"Predicted indices: {predicted_ids}")  # Debug predicted indices
+
+            decoded_moves = [index_to_word.get(idx, '?') for idx in predicted_ids]
+            print(f"Decoded moves: {decoded_moves}")  # Debug decoded moves
+
+            # If decoded_moves is still empty or contains '?', it means there was a problem
+            if not decoded_moves:
+                print("Warning: Empty or invalid moves, skipping...")
+            else:
+                # Perform the predicted moves
+                print("Executing moves:", decoded_moves)
+                for move in decoded_moves:
+                    if move == 'R':
+                        self.moveRight()
+                    elif move == 'L':
+                        self.moveLeft()
+                    elif move == 'D':
+                        self.dropPiece()
+                        break  # Usually ends the move sequence
+                    elif move == 'd':
+                        self.moveDown()
+                    elif move == 'r':
+                        self.rotatePiece()
+                    elif move == 'C':
+                        self.hold_Piece()
+
+            # Update board state (gravity, clearing lines, spawning new piece, etc.)
+            self.update()
+
+            # Draw again
+            gpx.drawBoard(pygame.display.get_surface(), self)
+            pygame.display.flip()
+
+            # Control game speed
+            clock.tick(3)  # Try 3 FPS for visible AI moves
+
+
+
+    # def auto_play(self):
+    #     self.AI_playing = True
+    #     gpx = Graphics()
+    #     clock = pygame.time.Clock()
+    #     clock.tick(60)
+    #     gpx.drawBoard(pygame.display.get_surface(), self)
+    #     pygame.display.flip()
+
+    #     model = load_model('models/tetris_AI.h5')
+    #     tokenizer = joblib.load("models/tokenizer.pkl")
+
+    #     X_input = self.prepare_input()
+    #     predicted_probs = model.predict(X_input)
+
+    #     predicted_id = int(np.argmax(predicted_probs))
+    #     #predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
+    #     #decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
+
+    #     # check if predicted_seq is valid
+    #     if predicted_id in tokenizer.index_word:
+    #         decoded_moves = tokenizer.sequences_to_texts([[predicted_id]])[0].split()
+    #     else:
+    #         print("Invalid prediction:", predicted_id)
+    #         decoded_moves = []
+
+    #     if not decoded_moves:
+    #         print("Empty move list, skipping...")
+    #         self.update()
+    #         gpx.drawBoard(pygame.display.get_surface(), self)
+    #         pygame.display.flip()
+    #         return
+
+    #     print(decoded_moves, "***************************************")
+
+    #     for move in decoded_moves:
+    #         if move == 'R':
+    #             self.moveRight()
+    #         elif move == 'L':
+    #             self.moveLeft()
+    #         elif move == 'D':
+    #             self.dropPiece()
+    #         elif move == 'd':
+    #             self.moveDown()
+    #         elif move == 'r':
+    #             self.rotatePiece()
+    #         elif move == 'C':
+    #             self.hold_Piece()
+
+    #     self.update()
+    #     gpx.drawBoard(pygame.display.get_surface(), self)
+    #     pygame.display.flip()
+
+        # while not self.game_ended:
+        #     X_input = self.prepare_input()
+        #     predicted_probs = model.predict(X_input)
+
+        #     predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
+        #     decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
+
+        #     print(decoded_moves, "***************************************")
+
+        #     #for move in decoded_moves:
+        #     i = 0
+        #     print(len(decoded_moves), "+++++++++++++++++++++++++++++++++++++++")
+        #     #for move in decoded_moves:
+        #     while i < len(decoded_moves):
+        #         #if time.time() - self.last_move_time > 0.5:
+        #         move = decoded_moves[i]
+        #         print(move, "///////////////////////////")
+        #         if move == 'R':
+        #             self.moveRight()
+        #         elif move == 'L':
+        #             self.moveLeft()
+        #         elif move == 'D':
+        #             self.dropPiece()
+        #         elif move == 'd':
+        #             self.moveDown()
+        #         elif move == 'r':
+        #             self.rotatePiece()
+        #         elif move == 'C':
+        #             self.hold_Piece()
+        #         i += 1
+        #     self.update()
+        #     gpx.drawBoard(pygame.display.get_surface(), self)
+        #     pygame.display.flip()
 
     def piece_to_int(self, piece):
         piece_map = {

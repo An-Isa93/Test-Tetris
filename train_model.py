@@ -90,7 +90,10 @@ def load_data():
 
     # Secuencias de movimientos
     df['move_sequence'] = df['moves'].apply(lambda x: json.loads(x))
+
     tokenizer = Tokenizer(char_level=False, lower=False)
+    tokenizer.word_index['PAD'] = 0
+    tokenizer.index_word[0] = 'PAD'
     tokenizer.fit_on_texts(df['move_sequence'])
 
     sequences = tokenizer.texts_to_sequences(df['move_sequence'])
@@ -110,7 +113,7 @@ def main():
     print("X_train.type:", X_train.dtype)  # Debería ser float o int
     print("y_train.type:", y_train.dtype) 
 
-    history = model.fit(X_train, y_train, epochs=15, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
+    history = model.fit(X_train, y_train, epochs=50, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
 
     y_pred = model.predict(X_test)
     y_pred_classes = np.argmax(y_pred, axis=-1)
@@ -119,6 +122,13 @@ def main():
     # Guardar las predicciones y los valores reales
     np.save('models/y_test.npy', y_test_classes)
     np.save('models/y_pred.npy', y_pred_classes)
+
+    print("Tokenizer vocab size:", len(tokenizer.word_index))  # How many words?
+    print("Tokenizer index to word map:", tokenizer.index_word)
+    print("Max class index (y_train):", np.max(y_train))
+    print("y_train.shape:", y_train.shape)
+    print("Unique classes in y_train:", np.unique(y_train))
+    #print(np.unique(y_train))
 
     model.evaluate(X_test, y_test)
 

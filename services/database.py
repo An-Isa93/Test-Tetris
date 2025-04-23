@@ -90,6 +90,16 @@ def get_db_size(): # Cantidad de registros en la tabla
     print(len(games))
     cursor.close()
 
+def get_moves(): # Cantidad de registros en la tabla
+    games = get_all_games()
+    
+    tot_moves = 0
+
+    for game in games:
+        tot_moves += len(game["moves"])
+
+    print(tot_moves)
+
 def truncate_table():
     conn=sqlite3.connect("tetris.db")
     cursor = conn.cursor()
@@ -100,6 +110,43 @@ def truncate_table():
     conn.close()
     pass
 
+def print_sequences():
+    games = get_all_games()
+
+    for game in games:
+        print(game['moves'])
+
+def count_where_length(length):
+    games = get_all_games()
+    count = 0
+
+    for game in games:
+        if len(game['moves']) >= length:
+            count += 1
+
+    print(count)
+
+def remove_long_sequences(length):
+    conn = sqlite3.connect("tetris.db")
+    cursor = conn.cursor()
+
+    games = get_all_games()
+
+    to_delete = []
+    for game in games:
+        game_id = game['id']
+        try:
+            if len(game['moves']) >= length:
+                to_delete.append((game_id,))
+        except:
+            continue  # Skip malformed entries
+
+    # Delete them by id
+    cursor.executemany('DELETE FROM games WHERE id = ?', to_delete)
+
+    conn.commit()
+    conn.close()
+    
 #View registers
 """
 games = get_all_games()
