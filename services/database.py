@@ -109,7 +109,7 @@ def truncate_table():
     #get_db_size()
     conn.close()
     pass
-
+truncate_table()
 def print_sequences():
     games = get_all_games()
 
