@@ -7,6 +7,8 @@ import numpy as np
 from services.database import  save_game
 from pygame.constants import SCRAP_SELECTION
 from tf_keras.models import load_model
+from services.model import CustomLoss
+from functools import partial
 from sklearn.preprocessing import LabelEncoder
 
 pygame.init()
@@ -874,7 +876,8 @@ class GameState(): #10x20
         self.AI_playing = True
         gpx = Graphics()
         clock = pygame.time.Clock()
-        model = load_model('models/tetris_AI.h5')
+        custom_loss_with_classes = partial(CustomLoss, num_classes=6)
+        model = load_model("models/tetris_AI.h5", custom_objects={"CustomLoss": custom_loss_with_classes})
         tokenizer = joblib.load("models/tokenizer.pkl")
 
         index_to_word = {

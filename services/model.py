@@ -1,6 +1,39 @@
 from tf_keras.models import Sequential
 from tf_keras.layers import Dense, LSTM, Attention, RepeatVector, Input, TimeDistributed, Dropout, Bidirectional
 from tf_keras.optimizers import Adam
+import tensorflow as tf
+import numpy as np
+
+
+
+class CustomLoss(tf.keras.losses.Loss):
+    def __init__(self,num_classes, penalty_factor=1.0, reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="custom_loss"):
+        super().__init__(reduction=reduction, name=name)
+        self.penalty_factor = penalty_factor
+        self.num_classes = num_classes 
+
+    def call(self, y_true, y_pred):
+        y_true = tf.squeeze(y_true, axis=-1)
+        # Pérdida base
+        base_loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
+
+        # Aplanar y_true para obtener solo las clases (tensor 1D)
+        y_true_flat = tf.reshape(y_true, [-1])  # Aplanar a 1D
+
+        # Obtener las clases únicas en y_true (solo las clases presentes)
+        class_counts = tf.math.bincount(y_true_flat, minlength=self.num_classes, maxlength=self.num_classes)
+
+        # Calcular la distribución de clases
+        class_distribution = tf.cast(class_counts, tf.float32)
+        class_distribution = tf.math.divide_no_nan(class_distribution, tf.reduce_sum(class_distribution))
+
+        # Penalización por desequilibrio en las clases
+        imbalance_penalty = tf.reduce_max(class_distribution)
+        penalty = imbalance_penalty * self.penalty_factor
+
+        # La pérdida final incluye la penalización
+        return tf.reduce_mean(base_loss) + penalty
+
 
 def create_model(input_shape, output_dim, max_seq_len):
     model = Sequential([
@@ -40,7 +73,8 @@ def create_model(input_shape, output_dim, max_seq_len):
     #     LSTM(64, return_sequences=True),
     #     Dense(output_dim, activation='softmax')
     # ])
+
     Optimizer = Adam(learning_rate=0.001, clipvalue=1.0)
 
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss=CustomLoss(num_classes=output_dim), optimizer=Optimizer, metrics=['accuracy'])
     return model

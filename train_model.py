@@ -12,7 +12,7 @@ from tf_keras.preprocessing.sequence import pad_sequences
 from tf_keras.backend import clear_session
 from tf_keras.callbacks import EarlyStopping
 import joblib
-from services.model import create_model  # Importamos desde archivo externo
+from services.model import create_model # Importamos desde archivo externo
 
 early_stopping = EarlyStopping(
     monitor='val_loss',      # Monitor validation loss
