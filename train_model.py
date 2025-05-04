@@ -39,6 +39,31 @@ def process_board(board):
     # Asegúrate de que `board` es una lista de listas, que representa el tablero
     return np.array([[piece_to_int(piece) for piece in row] for row in json.loads(board)])
 
+def extract_board_features(board_matrix):
+    board = np.array(board_matrix)
+    height = board.shape[0]
+    width = board.shape[1]
+
+    col_heights = []
+    holes = 0
+
+    for col in range(width):
+        column = board[:, col]
+        blocks = np.where(column != 0)[0]
+        if len(blocks) == 0:
+            col_heights.append(0)
+        else:
+            first_block = blocks[0]
+            col_heights.append(height - first_block)
+            holes += np.sum(column[first_block:] == 0)
+
+    max_height = max(col_heights)
+    avg_height = np.mean(col_heights)
+    bumpiness = sum(abs(col_heights[i] - col_heights[i+1]) for i in range(len(col_heights)-1))
+
+    return np.array([max_height, avg_height, holes, bumpiness])
+
+
 def load_data():
     conn = sqlite3.connect("tetris.db")
     df = pd.read_sql_query("SELECT * FROM games", conn)
@@ -53,7 +78,7 @@ def load_data():
     # Convertir el board a numpy array
     df['board_matrix'] = df['init_board'].apply(lambda x: process_board(x))
     df['board_flat'] = df['board_matrix'].apply(lambda mat: mat.flatten())
-
+    df['board_features'] = df['board_matrix'].apply(lambda mat: extract_board_features(mat))
     df['end_matrix'] = df['end_board'].apply(lambda x: process_board(x))
     df['end_flat'] = df['end_matrix'].apply(lambda mat: mat.flatten())
 
@@ -80,12 +105,12 @@ def load_data():
     df['hold_used'] = df['hold_used'].astype(int)
 
 
-    X = np.stack(df['board_flat'].values)
-    X = np.hstack([
-        X,
-        df[['current_piece_encoded', 'next_piece_encoded', 'hold_piece_encoded', 'hold_used']].values
-    ])
+    X_board = np.stack(df['board_flat'].values)
+    X_piece = df[['current_piece_encoded', 'next_piece_encoded', 'hold_piece_encoded', 'hold_used']].values
+    X_features = np.stack(df['board_features'].values)
 
+    X = np.hstack([X_board, X_piece, X_features])
+    print("x shape: ", X.shape)
     print("Im trying, X converted")
 
     # Secuencias de movimientos

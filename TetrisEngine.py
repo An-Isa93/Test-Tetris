@@ -538,11 +538,11 @@ class GameState(): #10x20
         if self.game_ended:
             return
 
-        '''last_speed = self.SPEED_FACTOR
+        last_speed = self.SPEED_FACTOR
         self.SPEED_FACTOR = 1 - 0.1*(self.score // 1000)
 
         if self.SPEED_FACTOR <= 0.10: self.SPEED_FACTOR = 0.10
-        if last_speed != self.SPEED_FACTOR: print(f"New gravity speed: {self.SPEED_FACTOR}")'''
+        if last_speed != self.SPEED_FACTOR: print(f"New gravity speed: {self.SPEED_FACTOR}")
 
         if time.time() - self.last_move_time > 1 * self.SPEED_FACTOR:
             self.last_move_time = time.time()
@@ -870,7 +870,62 @@ class GameState(): #10x20
                 self.score += 2*count
                 self.placePiece()  # Lock the piece and spawn a new one
                 break  # Exit the loop since the piece has been locked
+   
+    def get_board_matrix(self):
+        board = self.board 
+        return np.array(board)  
+    
+    def extract_board_features(self,board_matrix):
+        board = np.array(board_matrix)
+        height = board.shape[0]
+        width = board.shape[1]
 
+        col_heights = []
+        holes = 0
+
+        for col in range(width):
+            column = board[:, col]
+            blocks = np.where(column != 0)[0]
+            if len(blocks) == 0:
+                col_heights.append(0)
+            else:
+                first_block = blocks[0]
+                col_heights.append(height - first_block)
+                holes += np.sum(column[first_block:] == 0)
+
+        max_height = max(col_heights)
+        avg_height = np.mean(col_heights)
+        bumpiness = sum(abs(col_heights[i] - col_heights[i+1]) for i in range(len(col_heights)-1))
+        return np.array([max_height, avg_height, holes, bumpiness])
+
+    def prepare_input(self):
+        # Diccionario de codificación de piezas
+        piece_map = { 
+             0: 0,  # Vacío
+            'I': 1,  # Pieza I
+            'L': 2,  # Pieza L
+            'J': 3,  # Pieza J
+            'O': 4,  # Pieza O
+            'S': 5,  # Pieza S
+            'Z': 6,  # Pieza Z
+            'T': 7   # Pieza T
+            }
+        board = self.get_board_matrix()  # Matriz 20x10
+       
+        board = np.vectorize(lambda x: piece_map.get(x, 0))(board)  
+        board_flat = board.flatten()  
+        features = self.extract_board_features(board)  # Debe retornar 4 elementos
+        # Codificación segura de piezas
+        current_piece = piece_map.get(self.currentPiece, 0)
+        hold_piece = piece_map.get(self.holdPiece, 0)
+        next_piece = piece_map.get(self.nextPieces[0] if self.nextPieces else 0, 0)
+        hold_used = int(self.hold_used)
+
+        piece_data = np.array([current_piece, next_piece, hold_piece, hold_used], dtype=np.float32)
+
+        full_input = np.hstack([board_flat, piece_data, features])  # 200 + 4 + 4 = 208 elementos
+
+        return full_input.reshape(1, -1).astype(np.float32)
     # AUTO-PLAY
     def auto_play(self):
         self.AI_playing = True
@@ -890,12 +945,22 @@ class GameState(): #10x20
             pygame.display.flip()
 
             # Prediction for current piece
-            X_input = self.prepare_input()
+            X_input = self.prepare_input().astype(np.float32) 
             print("Prepared input shape:", X_input.shape)  # Debug input shape
             predicted_probs = model.predict(X_input)
 
             # Decode the predicted move(s)
-            predicted_ids = np.argmax(predicted_probs[0], axis=-1)  # Adjust if output is multi-dimensional
+            def apply_temperature(prob_dist, temperature=0.8):
+                prob_dist = np.log(prob_dist + 1e-20) / temperature  # suavizar con temperatura
+                prob_dist = np.exp(prob_dist)
+                prob_dist = prob_dist / np.sum(prob_dist)
+                return prob_dist
+
+            predicted_ids = [np.random.choice(len(p), p=apply_temperature(p, temperature=0.8))
+                 for p in predicted_probs[0]]
+            #predicted_ids = [np.random.choice(len(p), p=p) for p in predicted_probs[0]]
+            #predicted_ids = np.argmax(predicted_probs[0], axis=-1)
+            #predicted_ids = [np.argmax(apply_temperature(p, temperature=0.8)) for p in predicted_probs[0]]
             print(f"Predicted indices: {predicted_ids}")  # Debug predicted indices
 
             decoded_moves = [index_to_word.get(idx, '?') for idx in predicted_ids]
@@ -1039,7 +1104,7 @@ class GameState(): #10x20
         processed_board = [self.piece_to_int(piece) for row in self.board for piece in row]
         return np.array(processed_board)
 
-    def prepare_input(self):
+    """def prepare_input(self):
         le_piece = joblib.load("models/label_encoder.pkl")
         board_flat = self.process_board()
 
@@ -1049,7 +1114,7 @@ class GameState(): #10x20
         hold_used = int(self.hold_used)
 
         X_input = np.hstack([board_flat, current_encoded, next_encoded, hold_encoded, hold_used])
-        return X_input.reshape(1, -1)
+        return X_input.reshape(1, -1)"""
 
 #Jerry    
 class Piece():
