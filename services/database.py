@@ -101,14 +101,15 @@ def get_moves(): # Cantidad de registros en la tabla
     print(tot_moves)
 
 def truncate_table():
-    conn=sqlite3.connect("tetris.db")
+    '''conn=sqlite3.connect("tetris.db")
     cursor = conn.cursor()
     # TRUNCATE TABLE
     cursor.execute('DELETE FROM games')  # This deletes all rows
     conn.commit()
     #get_db_size()
-    conn.close()
+    conn.close()'''
     pass
+
 truncate_table()
 def print_sequences():
     games = get_all_games()
