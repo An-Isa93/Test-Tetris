@@ -482,14 +482,16 @@ class GameState(): #10x20
         if any(self.board[r][c] != 0 for r,c in self.currentPiece.get_cells()):
             print("Game Over!")
             self.game_ended = True # pygame.quit()
-            if self.holdPiece is not None:
-                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
-                                 self.holdPiece.type, self.moves, self.last_move_score,
-                                 self.hold_used, self.game_ended)
-            else:
-                save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
-                                 None, self.moves, self.last_move_score,
-                                 self.hold_used, self.game_ended)
+            if not self.AI_playing:
+                if self.holdPiece is not None:
+                    
+                    save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                    self.holdPiece.type, self.moves, self.last_move_score,
+                                    self.hold_used, self.game_ended)
+                else:
+                    save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
+                                    None, self.moves, self.last_move_score,
+                                    self.hold_used, self.game_ended)
             return
 
         for r, c in self.currentPiece.get_cells():
@@ -995,7 +997,7 @@ class GameState(): #10x20
             pygame.display.flip()
 
             # Control game speed
-            clock.tick(3)  # Try 3 FPS for visible AI moves
+            clock.tick(60)  # Try 3 FPS for visible AI moves
 
 
 

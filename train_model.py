@@ -12,7 +12,10 @@ from tf_keras.preprocessing.sequence import pad_sequences
 from tf_keras.backend import clear_session
 from tf_keras.callbacks import EarlyStopping
 import joblib
+from services.model import CustomLoss
 from services.model import create_model # Importamos desde archivo externo
+from tf_keras.models import load_model
+from functools import partial
 
 early_stopping = EarlyStopping(
     monitor='val_loss',      # Monitor validation loss
@@ -132,8 +135,18 @@ def load_data():
 def main():
     X, y, max_seq_len, tokenizer, le_piece = load_data()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    model_path = "models/tetris_AI.h5"
 
+    custom_loss_with_classes = partial(CustomLoss, num_classes=6)
+        
+
+    if os.path.exists(model_path):
+        print("Cargando modelo existente...")
+        model = load_model("models/tetris_AI.h5", custom_objects={"CustomLoss": custom_loss_with_classes})
+    else:
+        print("Creando un nuevo modelo...")
     model = create_model(X.shape[1], output_dim=len(tokenizer.word_index) + 1, max_seq_len=max_seq_len)
+
 
     print("X_train.type:", X_train.dtype)  # Debería ser float o int
     print("y_train.type:", y_train.dtype) 
@@ -164,5 +177,5 @@ def main():
 
 
 if __name__ == '__main__':
-    clear_session()
+    #clear_session()
     main()
