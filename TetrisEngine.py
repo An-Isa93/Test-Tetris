@@ -579,6 +579,7 @@ class GameState(): #10x20
 
         # Puntaje obtenido en el turno
         self.last_move_score = self.score - self.last_score
+        lines_cleared = self.clearFullRows(return_count=True)
 
         # Debugging
         # print([self.currentPiece.type, Next_pieces, moves,
@@ -630,7 +631,7 @@ class GameState(): #10x20
         # Find the difference
         self.projected_coords = list(piece_copy_cells - original_piece_cells)
 
-    def clearFullRows(self):
+    def clearFullRows(self, return_count = False):
         count = 0
         for row in range(self.rows):
             if all(self.board[row][col] != 0 for col in range(self.cols)):  # Row is full
@@ -643,6 +644,25 @@ class GameState(): #10x20
         elif count >= 1:
             ClearSFX.play()
         self.score += 100*count
+
+        if return_count:
+            if count:
+                print(f"*****\n{count} LINES CLEARED\n*****")
+                time.sleep(2)
+            return count
+        
+    def check_line_clear(self):
+        # curr_score = self.score
+        # self.clearFullRows()
+        # if curr_score != self.score:
+        #     return True
+        # return False
+        # count how many lines you cleared this step:
+        lines_cleared = self.clearFullRows(return_count=True)
+        if lines_cleared > 0:
+            print(f"*****\n{lines_cleared} LINES CLEARED\n*****\a")
+            time.sleep(2)
+        return lines_cleared
 
     def rotatePiece(self):
         new_shape = []
