@@ -540,12 +540,12 @@ class GameState(): #10x20
         if self.game_ended:
             return
 
-        last_speed = self.SPEED_FACTOR
+        '''last_speed = self.SPEED_FACTOR
         self.SPEED_FACTOR = 1 - 0.1*(self.score // 1000)
 
         if self.SPEED_FACTOR <= 0.10: self.SPEED_FACTOR = 0.10
         if last_speed != self.SPEED_FACTOR: print(f"New gravity speed: {self.SPEED_FACTOR}")
-
+'''
         if time.time() - self.last_move_time > 1 * self.SPEED_FACTOR:
             self.last_move_time = time.time()
 
