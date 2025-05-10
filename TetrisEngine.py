@@ -948,7 +948,7 @@ class GameState(): #10x20
 
             # Prediction for current piece
             X_input = self.prepare_input().astype(np.float32) 
-            print("Prepared input shape:", X_input.shape)  # Debug input shape
+            #print("Prepared input shape:", X_input.shape)  # Debug input shape
             predicted_probs = model.predict(X_input)
 
             # Decode the predicted move(s)
@@ -963,17 +963,17 @@ class GameState(): #10x20
             #predicted_ids = [np.random.choice(len(p), p=p) for p in predicted_probs[0]]
             #predicted_ids = np.argmax(predicted_probs[0], axis=-1)
             #predicted_ids = [np.argmax(apply_temperature(p, temperature=0.8)) for p in predicted_probs[0]]
-            print(f"Predicted indices: {predicted_ids}")  # Debug predicted indices
+            #print(f"Predicted indices: {predicted_ids}")  # Debug predicted indices
 
             decoded_moves = [index_to_word.get(idx, '?') for idx in predicted_ids]
-            print(f"Decoded moves: {decoded_moves}")  # Debug decoded moves
+            #print(f"Decoded moves: {decoded_moves}")  # Debug decoded moves
 
             # If decoded_moves is still empty or contains '?', it means there was a problem
             if not decoded_moves:
                 print("Warning: Empty or invalid moves, skipping...")
             else:
                 # Perform the predicted moves
-                print("Executing moves:", decoded_moves)
+                #print("Executing moves:", decoded_moves)
                 for move in decoded_moves:
                     if move == 'R':
                         self.moveRight()
