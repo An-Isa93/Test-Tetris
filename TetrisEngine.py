@@ -972,13 +972,13 @@ class GameState(): #10x20
             predicted_probs = model.predict(X_input)
 
             # Decode the predicted move(s)
-            def apply_temperature(prob_dist, temperature=0.8):
+            def apply_temperature(prob_dist, temperature):
                 prob_dist = np.log(prob_dist + 1e-20) / temperature  # suavizar con temperatura
                 prob_dist = np.exp(prob_dist)
                 prob_dist = prob_dist / np.sum(prob_dist)
                 return prob_dist
 
-            predicted_ids = [np.random.choice(len(p), p=apply_temperature(p, temperature=0.8))
+            predicted_ids = [np.random.choice(len(p), p=apply_temperature(p, temperature=1.5))
                  for p in predicted_probs[0]]
             #predicted_ids = [np.random.choice(len(p), p=p) for p in predicted_probs[0]]
             #predicted_ids = np.argmax(predicted_probs[0], axis=-1)

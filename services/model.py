@@ -32,17 +32,17 @@ class CustomLoss(tf.keras.losses.Loss):
         imbalance_penalty = tf.reduce_max(class_distribution)
         penalty = imbalance_penalty * self.penalty_factor
 
-       # Penalización por huecos (valores 0 en y_true)
-        #zeros_mask = tf.cast(tf.equal(y_true, 0), tf.float32)  # 1 si es 0 (hueco), 0 en otro caso
-        #num_zeros_per_row = tf.reduce_sum(zeros_mask, axis=1)  # suma de huecos por fila
-        #gap_penalty = tf.reduce_mean(num_zeros_per_row) * self.penalty_factor
+        # Penalización por huecos (valores 0 en y_true)
+        zeros_mask = tf.cast(tf.equal(y_true, 0), tf.float32)  # 1 si es 0 (hueco), 0 en otro caso
+        num_zeros_per_row = tf.reduce_sum(zeros_mask, axis=1)  # suma de huecos por fila
+        gap_penalty = tf.reduce_mean(num_zeros_per_row) * self.penalty_factor
 
          # Reward por fila completa 
         is_row_full = tf.reduce_all(tf.not_equal(y_true, 0), axis=1)  
         num_full_rows = tf.reduce_sum(tf.cast(is_row_full, tf.float32))
         reward = num_full_rows * self.reward_factor
 
-        return tf.reduce_mean(base_loss) + penalty - reward#+ gap_penalty 
+        return tf.reduce_mean(base_loss) + penalty - reward + gap_penalty 
 
 
 def create_model(input_shape, output_dim, max_seq_len):

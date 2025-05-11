@@ -35,11 +35,11 @@ piece_map = {
 }
 
 def piece_to_int(piece):
-    # Puedes hacer un mapeo de piezas específicas a enteros, por ejemplo:
+    
     return piece_map.get(piece, -1)
 
 def process_board(board):
-    # Asegúrate de que `board` es una lista de listas, que representa el tablero
+   
     return np.array([[piece_to_int(piece) for piece in row] for row in json.loads(board)])
 
 def extract_board_features(board_matrix):
