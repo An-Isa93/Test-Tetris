@@ -8,10 +8,7 @@ tetris = TetrisEngine.Graphics()
 
 get_db_size()
 get_moves()
-# count_where_length(15)
-# remove_long_sequences(15)
-# get_db_size()
+
 
 tetris.drawTitleScreen()
 
-#truncate_table()

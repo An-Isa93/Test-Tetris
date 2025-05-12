@@ -24,10 +24,9 @@ le_piece = LabelEncoder()
 le_move = LabelEncoder()
 le_piece.fit(['I', 'O', 'T', 'S', 'Z', 'J', 'L', 'none'])
 
-# Rebeca, Valeria
+
 class Graphics():
     def __init__(self):
-        #self.pieces = []
         self.screen_w = 300
         self.screen_h = 600
         self.rows = 20
@@ -46,7 +45,6 @@ class Graphics():
         self.music_stopped = False
 
         # Side spaces
-        # self.extra_height = 20 (TILE_SIZE)
         self.side_width = 260
         self.side_rows = 8
         self.side_cols = 4
@@ -146,18 +144,16 @@ class Graphics():
                     row = location[1]
 
                     if (305 <= row <= 365) and (281 <= col <= 521):
-                        #print("Startgame selected")
-                        waiting = False  # Salir del bucle cuando se presiona una tecla / Continuar con el juego
+                        waiting = False  # Exit the loop when a key is pressed / Continue with the game
                         pygame.mixer.music.stop()
                         self.main()
                     elif (505 <= row <= 565) and (281 <= col <= 521):
                         # AUTO-PLAY (AI)
                         self.main('AI')
-                        #print("Autoplay selected")
                         pass
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        waiting = False  # Salir del bucle cuando se presiona una tecla
+                        waiting = False  # Exit the loop when a key is pressed
                         pygame.mixer.music.stop()
                         self.main()
 
@@ -291,7 +287,6 @@ class Graphics():
                                 (self.TILE_SIZE*2 + (self.screen_h // 2) + 35),
                                 self.TILE_SIZE * 4 + 10, self.TILE_SIZE * 3))
         
-        #font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 40)
         font = pygame.font.SysFont("Arial", 48)
         text = font.render(str(gs.score), True, (0,0,0))  # White text
         screen.blit(text, (self.side_width // 2 - 75 + (self.TILE_SIZE * 4 + 10 - text.get_width()) // 2, 
@@ -367,7 +362,6 @@ class Graphics():
 
         pygame.display.flip()  # Update the display
 
-# Ana, Arturo
 class GameState(): #10x20
     def __init__(self):
         self.board = [ #Tablero / grid [[0]*10 for _ in range(20)]
@@ -445,19 +439,19 @@ class GameState(): #10x20
     def getMoves(self): #optimize movements
         moves = []
 
-        # Cantidad de rotaciones
+        # Number of rotations
         rotations = self.log.count('r') % 4
         if rotations > 0:
             moves.extend(['r'] * abs(rotations))
 
-        # Cantidad de movimientos laterales
+        # Number of lateral (side) moves
         side_moves = self.log.count('L') - self.log.count('R')
         if side_moves < 0:
             moves.extend(['R'] * abs(side_moves))
         elif side_moves > 0:
             moves.extend(['L'] * abs(side_moves))
 
-        # Cantidad de movimientos hacia abajo
+        # Number of downward moves
         down = self.log.count('d')
         if down > 0: moves.extend(['d'] * down)
 
@@ -475,10 +469,7 @@ class GameState(): #10x20
             self.nextPieces.append(Piece(new_piece))
 
         self.currentPiece = self.nextPieces.pop(0) # 'K' 'L' 'O'
-        
-        # Debugging
-        # print(self.currentPiece.type, end = " // ")
-        # print([k.type for k in self.nextPieces])
+
         if any(self.board[r][c] != 0 for r,c in self.currentPiece.get_cells()):
             print("Game Over!")
             self.game_ended = True # pygame.quit()
@@ -525,10 +516,6 @@ class GameState(): #10x20
                 if 0 <= r < 9 and 0 <= c < 4:
                     self.nextPiecesGrid[r][c] = type
 
-        # Debugging output
-        # print([p.type for p in self.nextPieces])
-        # for row in self.nextPiecesGrid:
-        #     print(row)
         self.getProjection()
 
     def update(self):
@@ -540,12 +527,6 @@ class GameState(): #10x20
         if self.game_ended:
             return
 
-        '''last_speed = self.SPEED_FACTOR
-        self.SPEED_FACTOR = 1 - 0.1*(self.score // 1000)
-
-        if self.SPEED_FACTOR <= 0.10: self.SPEED_FACTOR = 0.10
-        if last_speed != self.SPEED_FACTOR: print(f"New gravity speed: {self.SPEED_FACTOR}")
-'''
         if time.time() - self.last_move_time > 1 * self.SPEED_FACTOR:
             self.last_move_time = time.time()
 
@@ -564,7 +545,6 @@ class GameState(): #10x20
             else:
                 self.lock_delay += 1
                 # Lock the piece and spawn a new one
-                # print("Locking piece")
                 if self.lock_delay >= self.LOCK_LIMIT:
                     self.placePiece()
 
@@ -574,16 +554,14 @@ class GameState(): #10x20
                 self.board[r][c] = self.currentPiece.type
 
         turn_time = time.time() - self.init_time
-        self.moves = self.log #self.getMoves()
+        self.moves = self.log 
         self. Next_pieces = [piece.type for piece in self.nextPieces]
 
-        # Puntaje obtenido en el turno
+        # Score obtained in the turn
         self.last_move_score = self.score - self.last_score
         lines_cleared = self.clearFullRows(return_count=True)
 
         # Debugging
-        # print([self.currentPiece.type, Next_pieces, moves,
-        #        self.last_score, turn_time, self.hold_used, self.game_ended])
         if not self.AI_playing: # PREVENTS FROM MAKING UNOPTIMIZED INSERTS WHILE TRAINING
             if self.holdPiece is not None:
                 save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
@@ -593,10 +571,6 @@ class GameState(): #10x20
                 save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
                                     'none', self.moves, self.last_move_score,
                                     self.hold_used, self.game_ended)
-        # ELSE
-        # self.dbConnection.insert(self.init_board, self.board, self.currentPiece.type, Next_pieces,
-        #                          None/Null, moves, self.last_score, turn_time,
-        #                          self.hold_used, self.game_ended)
 
         # Spawn a new piece
         self.clearFullRows()
@@ -652,12 +626,6 @@ class GameState(): #10x20
             return count
         
     def check_line_clear(self):
-        # curr_score = self.score
-        # self.clearFullRows()
-        # if curr_score != self.score:
-        #     return True
-        # return False
-        # count how many lines you cleared this step:
         lines_cleared = self.clearFullRows(return_count=True)
         if lines_cleared > 0:
             print(f"*****\n{lines_cleared} LINES CLEARED\n*****\a")
@@ -667,7 +635,6 @@ class GameState(): #10x20
     def rotatePiece(self):
         new_shape = []
         new_positions = []
-        #print(self.currentPiece.cells, "**************")
 
         pivot = self.currentPiece.shape[2]
         
@@ -701,19 +668,15 @@ class GameState(): #10x20
         for r, c in new_pos:
             # Check if the position is out of bounds
             if not (0 <= r < self.rows and 0 <= c < self.cols):
-                # print("Rotation out of bounds.")
                 return False  # Rotation is not valid, out of bounds
             
             # Check if the position is occupied by another piece (not the current piece's cells)
             if self.board[r][c] != 0 and (r, c) not in current_positions:
-                # print("Spot occupied by another piece.")
                 return False  # Rotation is not valid, occupied spot
 
         # Clear the current piece's old positions on the board
         for r, c in current_positions:
             self.board[r][c] = 0
-
-        # print("Rotating piece")
 
         # Update the board with the new rotated positions
         self.currentPiece.cells = new_pos
@@ -735,8 +698,6 @@ class GameState(): #10x20
             # Clear old position
             for r, c in current_positions:
                 self.board[r][c] = 0
-            
-            # print("Moving piece left")
             
             # Move piece down
             self.currentPiece.col -= 1  
@@ -760,7 +721,6 @@ class GameState(): #10x20
             for r, c in current_positions:
                 self.board[r][c] = 0
             
-            # print("Moving piece right")
             
             # Move piece down
             self.currentPiece.col += 1  
@@ -784,8 +744,6 @@ class GameState(): #10x20
             for r, c in current_positions:
                 self.board[r][c] = 0
             
-            # print("Moving piece down")
-            
             # Move piece down
             self.currentPiece.row += 1  
             
@@ -797,12 +755,10 @@ class GameState(): #10x20
             self.score += 1
         else:
             # Lock the piece and spawn a new one
-            # print("Locking piece")
             self.placePiece()
 
     def hold_Piece(self):
         if self.hold_used:
-            # Can't change twice in a row with the same piece
             return
 
         for r,c in self.currentPiece.get_cells():
@@ -813,9 +769,6 @@ class GameState(): #10x20
             self.holdPiece = self.currentPiece
             self.spawnPieces()  # Spawn new piece after first hold
         else:
-            # for r, c in self.holdPiece.get_cells():
-            #     self.holdPieceGrid[r][c] = 0
-            # Swap current piece with the held one
             self.currentPiece, self.holdPiece = self.holdPiece, self.currentPiece
             self.spawnHoldPiece()
 
@@ -850,11 +803,6 @@ class GameState(): #10x20
             if 0 <= r < 2 and 0 <= c < 4:  # Prevent index errors
                 self.holdPieceGrid[r][c] = type
 
-        # Debugging output
-        # print("Hold Piece:", self.holdPiece.type)
-        # for row in self.holdPieceGrid:
-        #     print(row)
-
     def spawnHoldPiece(self):
         self.currentPiece = Piece(self.currentPiece.type)
         for r, c in self.currentPiece.get_cells():
@@ -887,10 +835,9 @@ class GameState(): #10x20
                 current_positions = self.currentPiece.get_cells()  # Update current_positions to the new one
             else:
                 # Lock the piece in place and spawn a new piece
-                # print("Locking piece")
                 self.log.append('D')
                 self.score += 2*count
-                self.placePiece()  # Lock the piece and spawn a new one
+                self.placePiece()  
                 break  # Exit the loop since the piece has been locked
    
     def get_board_matrix(self):
@@ -921,23 +868,23 @@ class GameState(): #10x20
         return np.array([max_height, avg_height, holes, bumpiness])
 
     def prepare_input(self):
-        # Diccionario de codificación de piezas
+        # Piece encoding dictionary
         piece_map = { 
-             0: 0,  # Vacío
-            'I': 1,  # Pieza I
-            'L': 2,  # Pieza L
-            'J': 3,  # Pieza J
-            'O': 4,  # Pieza O
-            'S': 5,  # Pieza S
-            'Z': 6,  # Pieza Z
-            'T': 7   # Pieza T
+             0: 0,  
+            'I': 1,  
+            'L': 2,  
+            'J': 3,  
+            'O': 4,  
+            'S': 5,  
+            'Z': 6,  
+            'T': 7   
             }
-        board = self.get_board_matrix()  # Matriz 20x10
+        board = self.get_board_matrix()  # 20x10 matrix
        
         board = np.vectorize(lambda x: piece_map.get(x, 0))(board)  
         board_flat = board.flatten()  
-        features = self.extract_board_features(board)  # Debe retornar 4 elementos
-        # Codificación segura de piezas
+        features = self.extract_board_features(board)  # Should return 4 elements
+        # Safe encoding of pieces
         current_piece = piece_map.get(self.currentPiece, 0)
         hold_piece = piece_map.get(self.holdPiece, 0)
         next_piece = piece_map.get(self.nextPieces[0] if self.nextPieces else 0, 0)
@@ -945,9 +892,10 @@ class GameState(): #10x20
 
         piece_data = np.array([current_piece, next_piece, hold_piece, hold_used], dtype=np.float32)
 
-        full_input = np.hstack([board_flat, piece_data, features])  # 200 + 4 + 4 = 208 elementos
+        full_input = np.hstack([board_flat, piece_data, features]) # 200 + 4 + 4 = 208 elements
 
         return full_input.reshape(1, -1).astype(np.float32)
+    
     # AUTO-PLAY
     def auto_play(self):
         self.AI_playing = True
@@ -968,32 +916,26 @@ class GameState(): #10x20
 
             # Prediction for current piece
             X_input = self.prepare_input().astype(np.float32) 
-            #print("Prepared input shape:", X_input.shape)  # Debug input shape
+           
             predicted_probs = model.predict(X_input)
 
             # Decode the predicted move(s)
             def apply_temperature(prob_dist, temperature):
-                prob_dist = np.log(prob_dist + 1e-20) / temperature  # suavizar con temperatura
+                prob_dist = np.log(prob_dist + 1e-20) / temperature  
                 prob_dist = np.exp(prob_dist)
                 prob_dist = prob_dist / np.sum(prob_dist)
                 return prob_dist
 
             predicted_ids = [np.random.choice(len(p), p=apply_temperature(p, temperature=1.5))
                  for p in predicted_probs[0]]
-            #predicted_ids = [np.random.choice(len(p), p=p) for p in predicted_probs[0]]
-            #predicted_ids = np.argmax(predicted_probs[0], axis=-1)
-            #predicted_ids = [np.argmax(apply_temperature(p, temperature=0.8)) for p in predicted_probs[0]]
-            #print(f"Predicted indices: {predicted_ids}")  # Debug predicted indices
 
             decoded_moves = [index_to_word.get(idx, '?') for idx in predicted_ids]
-            #print(f"Decoded moves: {decoded_moves}")  # Debug decoded moves
 
             # If decoded_moves is still empty or contains '?', it means there was a problem
             if not decoded_moves:
                 print("Warning: Empty or invalid moves, skipping...")
             else:
                 # Perform the predicted moves
-                #print("Executing moves:", decoded_moves)
                 for move in decoded_moves:
                     if move == 'R':
                         self.moveRight()
@@ -1017,128 +959,28 @@ class GameState(): #10x20
             pygame.display.flip()
 
             # Control game speed
-            clock.tick(60)  # Try 3 FPS for visible AI moves
-
-
-
-    # def auto_play(self):
-    #     self.AI_playing = True
-    #     gpx = Graphics()
-    #     clock = pygame.time.Clock()
-    #     clock.tick(60)
-    #     gpx.drawBoard(pygame.display.get_surface(), self)
-    #     pygame.display.flip()
-
-    #     model = load_model('models/tetris_AI.h5')
-    #     tokenizer = joblib.load("models/tokenizer.pkl")
-
-    #     X_input = self.prepare_input()
-    #     predicted_probs = model.predict(X_input)
-
-    #     predicted_id = int(np.argmax(predicted_probs))
-    #     #predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
-    #     #decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
-
-    #     # check if predicted_seq is valid
-    #     if predicted_id in tokenizer.index_word:
-    #         decoded_moves = tokenizer.sequences_to_texts([[predicted_id]])[0].split()
-    #     else:
-    #         print("Invalid prediction:", predicted_id)
-    #         decoded_moves = []
-
-    #     if not decoded_moves:
-    #         print("Empty move list, skipping...")
-    #         self.update()
-    #         gpx.drawBoard(pygame.display.get_surface(), self)
-    #         pygame.display.flip()
-    #         return
-
-    #     print(decoded_moves, "***************************************")
-
-    #     for move in decoded_moves:
-    #         if move == 'R':
-    #             self.moveRight()
-    #         elif move == 'L':
-    #             self.moveLeft()
-    #         elif move == 'D':
-    #             self.dropPiece()
-    #         elif move == 'd':
-    #             self.moveDown()
-    #         elif move == 'r':
-    #             self.rotatePiece()
-    #         elif move == 'C':
-    #             self.hold_Piece()
-
-    #     self.update()
-    #     gpx.drawBoard(pygame.display.get_surface(), self)
-    #     pygame.display.flip()
-
-        # while not self.game_ended:
-        #     X_input = self.prepare_input()
-        #     predicted_probs = model.predict(X_input)
-
-        #     predicted_seq = np.argmax(predicted_probs, axis=-1)[0]
-        #     decoded_moves = tokenizer.sequences_to_texts([predicted_seq])[0].split()
-
-        #     print(decoded_moves, "***************************************")
-
-        #     #for move in decoded_moves:
-        #     i = 0
-        #     print(len(decoded_moves), "+++++++++++++++++++++++++++++++++++++++")
-        #     #for move in decoded_moves:
-        #     while i < len(decoded_moves):
-        #         #if time.time() - self.last_move_time > 0.5:
-        #         move = decoded_moves[i]
-        #         print(move, "///////////////////////////")
-        #         if move == 'R':
-        #             self.moveRight()
-        #         elif move == 'L':
-        #             self.moveLeft()
-        #         elif move == 'D':
-        #             self.dropPiece()
-        #         elif move == 'd':
-        #             self.moveDown()
-        #         elif move == 'r':
-        #             self.rotatePiece()
-        #         elif move == 'C':
-        #             self.hold_Piece()
-        #         i += 1
-        #     self.update()
-        #     gpx.drawBoard(pygame.display.get_surface(), self)
-        #     pygame.display.flip()
+            clock.tick(60)  
 
     def piece_to_int(self, piece):
         piece_map = {
-            0: 0,  # Vacío
-            'I': 1,  # Pieza I
-            'L': 2,  # Pieza L
-            'J': 3,  # Pieza J
-            'O': 4,  # Pieza O
-            'S': 5,  # Pieza S
-            'Z': 6,  # Pieza Z
-            'T': 7   # Pieza T
+            0: 0,  
+            'I': 1,  
+            'L': 2,  
+            'J': 3, 
+            'O': 4,  
+            'S': 5,  
+            'Z': 6, 
+            'T': 7   
         }
-        # Puedes hacer un mapeo de piezas específicas a enteros, por ejemplo:
         return piece_map.get(piece, 0)
 
     def process_board(self):
-        # Asegúrate de que `board` es una lista de listas, que representa el tablero
+       
         processed_board = [self.piece_to_int(piece) for row in self.board for piece in row]
         return np.array(processed_board)
 
-    """def prepare_input(self):
-        le_piece = joblib.load("models/label_encoder.pkl")
-        board_flat = self.process_board()
 
-        current_encoded = le_piece.transform([self.currentPiece.type])[0]
-        next_encoded = le_piece.transform([self.nextPieces[-1].type])[0]
-        hold_encoded = le_piece.transform([self.holdPiece.type if self.holdPiece else 'none'])[0]
-        hold_used = int(self.hold_used)
-
-        X_input = np.hstack([board_flat, current_encoded, next_encoded, hold_encoded, hold_used])
-        return X_input.reshape(1, -1)"""
-
-#Jerry    
+  
 class Piece():
     start_positions = {  # Initial spawn locations
         'I': (0, 3), 'O': (0, 4), 'T': (0, 4),

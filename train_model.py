@@ -148,7 +148,7 @@ def main():
     model = create_model(X.shape[1], output_dim=len(tokenizer.word_index) + 1, max_seq_len=max_seq_len)
 
 
-    print("X_train.type:", X_train.dtype)  # Debería ser float o int
+    print("X_train.type:", X_train.dtype) 
     print("y_train.type:", y_train.dtype) 
 
     history = model.fit(X_train, y_train, epochs=50, batch_size=48, validation_split=0.1, callbacks=[early_stopping])
@@ -166,7 +166,6 @@ def main():
     print("Max class index (y_train):", np.max(y_train))
     print("y_train.shape:", y_train.shape)
     print("Unique classes in y_train:", np.unique(y_train))
-    #print(np.unique(y_train))
 
     model.evaluate(X_test, y_test)
 
@@ -177,5 +176,4 @@ def main():
 
 
 if __name__ == '__main__':
-    #clear_session()
     main()

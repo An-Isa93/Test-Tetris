@@ -31,7 +31,6 @@ def save_game(init_board,end_board, currentPiece, nextPieces, holdPiece, moves, 
     endGrid = json.dumps(end_board)
     next_piece_json = json.dumps(nextPieces)
     moves_json= json.dumps(moves)
-    #current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
    
 
