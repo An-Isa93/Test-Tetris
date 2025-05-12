@@ -11,7 +11,7 @@ This is like the classic Tetris game: four block pices will be falling one by on
 The AI is designed to learn from a large database of around 20k records from organic plays to analyze game strategies and learn to play from them, making the best game decisions based on the given board and pieces. You can access this game mode by clicking in the "Auto-Play" button in the main page.
 
 ## 🚀 Installation
-First, clone the repository. Then, go into your favorite terminal and type "git clone git@github.com:YOUR_USERNAME/Test-Tetris.git" followed by "npm install" to install all the needed dependencies.
+First, clone the repository. Then, go into your favorite terminal and type "git clone git@github.com:YOUR_USERNAME/Test-Tetris.git" followed by "pip install" to install all the needed dependencies.
 Now, open the folder in your IDE and inside the main folder, open the "main.py" file and run it. The main page will display in your screen. Now, choose the play mode you want!
 
 ## 📸 Screenshots
