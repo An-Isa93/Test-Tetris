@@ -19,11 +19,9 @@ ClearSFX = pygame.mixer.Sound("assets/audio/sfx/ClearLine.mp3")
 GameOverSFX = pygame.mixer.Sound("assets/audio/sfx/GameOver.mp3")
 RotationSFX = pygame.mixer.Sound("assets/audio/sfx/Rotation.mp3")
 TetrisSFX = pygame.mixer.Sound("assets/audio/sfx/TetrisClear.mp3")
-
 le_piece = LabelEncoder()
 le_move = LabelEncoder()
 le_piece.fit(['I', 'O', 'T', 'S', 'Z', 'J', 'L', 'none'])
-
 
 class Graphics():
     def __init__(self):
@@ -55,7 +53,6 @@ class Graphics():
         screen = pygame.display.set_mode((self.screen_w + self.side_width * 2,
                                           self.screen_h + self.TILE_SIZE * 2))
         screen.fill(pygame.Color("#929292"))
-
         font = pygame.font.Font("fonts/BungeeTint-Regular.ttf", 120)
         text = font.render('Tetris', True, (255, 255, 255))  
         font = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 28)
@@ -98,42 +95,34 @@ class Graphics():
             button2_rect.y + (button2_rect.height - text3.get_height()) // 2
         )
         screen.blit(text3, text3_pos)
-
-
         waiting = True
         colors = [
             pygame.Color("cyan"), pygame.Color("blue"), pygame.Color("orange"),
             pygame.Color("yellow"), pygame.Color("green"), pygame.Color("purple"),
             pygame.Color("red")
             ]
-        
         last_color_change = pygame.time.get_ticks()  # Save initial time 
         color_change_interval = 300
         current_color=random.choice(colors)
         while waiting:
             screen_width, screen_height = screen.get_size()
             TILE_SIZE = 30
-            
             current_time = pygame.time.get_ticks()
             if current_time - last_color_change >= color_change_interval:
                 last_color_change = current_time  # Update time of last change
                 current_color = random.choice(colors)  # Change random color 
-
             #borders 
             for x in range(0, screen_width + TILE_SIZE, TILE_SIZE):
                 for y in [0, screen_height - TILE_SIZE]:
                     rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
                     pygame.draw.rect(screen,current_color, rect)  
                     pygame.draw.rect(screen, pygame.Color("black"), rect, 1) 
-            
             for y in range(0, screen_height + TILE_SIZE, TILE_SIZE):
                 for x in [0, screen_width - TILE_SIZE]:
                     rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
                     pygame.draw.rect(screen, current_color, rect)  
                     pygame.draw.rect(screen, pygame.Color("black"), rect, 1) 
-            
             pygame.display.flip()  # Update the display
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -142,7 +131,6 @@ class Graphics():
                     location = pygame.mouse.get_pos()
                     col = location[0]
                     row = location[1]
-
                     if (305 <= row <= 365) and (281 <= col <= 521):
                         waiting = False  # Exit the loop when a key is pressed / Continue with the game
                         pygame.mixer.music.stop()
@@ -214,10 +202,8 @@ class Graphics():
                 gs.update()
                 self.drawBoard(screen, gs)
                 pygame.display.flip()
-        
         if gs.game_ended:
             self.draw_GameOver(gs)
-            
             waiting = True
             while waiting:
                 for event in pygame.event.get():
@@ -228,7 +214,6 @@ class Graphics():
                         location = pygame.mouse.get_pos()
                         col = location[0]
                         row = location[1]
-
                         if (390 <= row <= 450) and (280 <= col <= 520): #(280 <= col <= 520)
                             del(gs)
                             waiting = False  # Salir del bucle cuando se presiona una tecla
@@ -323,43 +308,36 @@ class Graphics():
     def draw_GameOver(self, gs):
         game_over_w = self.screen_w
         game_over_h = (self.screen_w) * 9 // 16
-
         self.stop_music()
         self.music_paused = True
         GameOverSFX.play()
-
         font = pygame.font.Font("fonts/BungeeShade-Regular.ttf", 70)
         font2 = pygame.font.Font("fonts/RubikMonoOne-Regular.ttf", 28)
         text = font.render('Game Over', True, (255, 255, 255))  # White text
         text2 = font.render(f'Score: {gs.score}', True, (255, 255, 255))  # White text
         text3 = font2.render('Play again', True, (0,0,0))
         screen = pygame.display.get_surface()
-
         overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)  # Transparent surface
         overlay.fill((0, 0, 0, 192))  # Semi-transparent black (RGBA: 192 = 25% transparency)
 
         # Fill the screen with the translucent overlay
         screen.blit(overlay, (0, 0))
-        
         screen.blit(text, (self.side_width + game_over_w // 2 - text.get_width() // 2, 
                         screen.get_height() // 2 - text.get_height() // 2 - game_over_h // 2))  # Center the text
         screen.blit(text2, (self.side_width + game_over_w // 2 - text2.get_width() // 2, 
                         screen.get_height() // 2 - text2.get_height() // 2))  # Center the text
-        
         button3_rect = pygame.Rect(self.side_width + game_over_w // 2 - 250 // 2,
         screen.get_height() // 2 - 60 // 2 + game_over_h // 2, 250,60)
-
         border3 = button3_rect.inflate(6,6)
         pygame.draw.rect(screen,"black", border3)
         pygame.draw.rect(screen, "grey73", button3_rect)
 
-        # Centrar el texto dentro del botón
+        # Center text in button
         text3_pos = (
             button3_rect.x + (button3_rect.width - text3.get_width()) // 2,
             button3_rect.y + (button3_rect.height - text3.get_height()) // 2
         )
         screen.blit(text3, text3_pos)
-
         pygame.display.flip()  # Update the display
 
 class GameState(): #10x20
@@ -433,7 +411,6 @@ class GameState(): #10x20
 
         # Difficulty increment
         self.SPEED_FACTOR = 1
-
         self.spawnPieces()
 
     def getMoves(self): #optimize movements
@@ -454,28 +431,22 @@ class GameState(): #10x20
         # Number of downward moves
         down = self.log.count('d')
         if down > 0: moves.extend(['d'] * down)
-
         if 'C' in self.log:
             moves.extend('C')
-
         if 'D' in self.log:
             moves.extend('D')
-
         return moves
 
     def spawnPieces(self):
         while len(self.nextPieces) < 4:
             new_piece = random.choice(self.images)
             self.nextPieces.append(Piece(new_piece))
-
         self.currentPiece = self.nextPieces.pop(0) # 'K' 'L' 'O'
-
         if any(self.board[r][c] != 0 for r,c in self.currentPiece.get_cells()):
             print("Game Over!")
             self.game_ended = True # pygame.quit()
             if not self.AI_playing:
                 if self.holdPiece is not None:
-                    
                     save_game(self.init_board, self.board, self.currentPiece.type, self.Next_pieces,
                                     self.holdPiece.type, self.moves, self.last_move_score,
                                     self.hold_used, self.game_ended)
@@ -484,15 +455,12 @@ class GameState(): #10x20
                                     None, self.moves, self.last_move_score,
                                     self.hold_used, self.game_ended)
             return
-
         for r, c in self.currentPiece.get_cells():
             self.board[r][c] = self.currentPiece.type
-
         self.init_time = time.time()
         self.init_board = self.board
 
-        # Spawn next pieces
-        # Clear preview grid
+        # Spawn next pieces and Clear preview grid
         self.nextPiecesGrid = [[0] * 4 for _ in range(9)]  # Now 9 rows for spacing
 
         # Spawn next pieces in the preview grid
@@ -521,15 +489,11 @@ class GameState(): #10x20
     def update(self):
         current_positions = self.currentPiece.get_cells()
         new_positions = [(r + 1, c) for r, c in current_positions]
-        
         self.getProjection()
-
         if self.game_ended:
             return
-
         if time.time() - self.last_move_time > 1 * self.SPEED_FACTOR:
             self.last_move_time = time.time()
-
             if all((r < self.rows and self.board[r][c] == 0) or ((r,c) in current_positions) for r, c in new_positions): 
                 # Clear old position
                 for r, c in current_positions:
@@ -552,8 +516,6 @@ class GameState(): #10x20
         for r, c in self.currentPiece.get_cells():
             if 0 <= r < self.rows and 0 <= c < self.cols:
                 self.board[r][c] = self.currentPiece.type
-
-        turn_time = time.time() - self.init_time
         self.moves = self.log 
         self. Next_pieces = [piece.type for piece in self.nextPieces]
 
@@ -577,7 +539,6 @@ class GameState(): #10x20
         self.spawnPieces()
         self.log.clear()
         self.hold_used = False
-
         if self.AI_playing:
             self.auto_play()
 
@@ -587,7 +548,6 @@ class GameState(): #10x20
         piece_copy.row = self.currentPiece.row
         piece_copy.col = self.currentPiece.col
         piece_copy.shape = self.currentPiece.shape
-
         while True:
             # Calculate new projected positions
             new_positions = [(r + 1, c) for r, c in piece_copy.get_cells()]
@@ -612,7 +572,6 @@ class GameState(): #10x20
                 self.board.pop(row)  # Remove the full row
                 self.board.insert(0, [0] * self.cols)  # Insert an empty row at the top
                 count += 1
-
         if count == 4:
             TetrisSFX.play()
         elif count >= 1:
@@ -635,9 +594,7 @@ class GameState(): #10x20
     def rotatePiece(self):
         new_shape = []
         new_positions = []
-
         pivot = self.currentPiece.shape[2]
-        
         if self.currentPiece.type == 'O':
             return
         elif self.currentPiece.type == 'I':
@@ -652,9 +609,7 @@ class GameState(): #10x20
         else:
             new_shape = [((c - pivot[1]) + pivot[0], -(r - pivot[0]) + pivot[1]) 
                      for r, c in self.currentPiece.shape]
-        
         new_positions = self.currentPiece.get_cells(new_shape)
-
         if self.validate_rotation(new_positions):
             RotationSFX.play()
             self.currentPiece.cells = new_positions
@@ -663,24 +618,19 @@ class GameState(): #10x20
     
     def validate_rotation(self, new_pos):
         current_positions = self.currentPiece.get_cells()
-
         # Check if the new positions are valid: within bounds and not colliding
         for r, c in new_pos:
             # Check if the position is out of bounds
             if not (0 <= r < self.rows and 0 <= c < self.cols):
                 return False  # Rotation is not valid, out of bounds
-            
             # Check if the position is occupied by another piece (not the current piece's cells)
             if self.board[r][c] != 0 and (r, c) not in current_positions:
                 return False  # Rotation is not valid, occupied spot
-
         # Clear the current piece's old positions on the board
         for r, c in current_positions:
             self.board[r][c] = 0
-
         # Update the board with the new rotated positions
         self.currentPiece.cells = new_pos
-        
         for r, c in new_pos:
             self.board[r][c] = self.currentPiece.type
         return True
@@ -693,7 +643,6 @@ class GameState(): #10x20
     def moveLeft(self):
         current_positions = self.currentPiece.get_cells()
         new_positions = [(r, c - 1) for r, c in current_positions]
-
         if all((c >= 0 and self.board[r][c] == 0) or ((r,c) in current_positions) for r, c in new_positions): 
             # Clear old position
             for r, c in current_positions:
@@ -715,13 +664,11 @@ class GameState(): #10x20
     def moveRight(self):
         current_positions = self.currentPiece.get_cells()
         new_positions = [(r, c + 1) for r, c in current_positions]
-
         if all((c < self.cols  and self.board[r][c] == 0) or ((r,c) in current_positions) for r, c in new_positions): 
             # Clear old position
             for r, c in current_positions:
                 self.board[r][c] = 0
-            
-            
+             
             # Move piece down
             self.currentPiece.col += 1  
             
@@ -738,7 +685,6 @@ class GameState(): #10x20
     def moveDown(self):
         current_positions = self.currentPiece.get_cells()
         new_positions = [(r + 1, c) for r, c in current_positions]
-
         if all((r < self.rows and self.board[r][c] == 0) or ((r,c) in current_positions) for r, c in new_positions): 
             # Clear old position
             for r, c in current_positions:
@@ -760,7 +706,6 @@ class GameState(): #10x20
     def hold_Piece(self):
         if self.hold_used:
             return
-
         for r,c in self.currentPiece.get_cells():
             self.board[r][c] = 0
 
@@ -778,12 +723,11 @@ class GameState(): #10x20
         self.hold_used = True
 
     def updateHoldGrid(self):
-        """ Updates the hold piece grid for previewing the held piece. """
+        #Updates the hold piece grid for previewing the held piece.
         self.holdPieceGrid = [[0] * 4 for _ in range(2)]  # 2-row display
 
         if not self.holdPiece:
             return  # No piece held yet
-
         type = self.holdPiece.type
 
         # Centering offsets based on piece shape
@@ -848,7 +792,6 @@ class GameState(): #10x20
         board = np.array(board_matrix)
         height = board.shape[0]
         width = board.shape[1]
-
         col_heights = []
         holes = 0
 
@@ -880,7 +823,6 @@ class GameState(): #10x20
             'T': 7   
             }
         board = self.get_board_matrix()  # 20x10 matrix
-       
         board = np.vectorize(lambda x: piece_map.get(x, 0))(board)  
         board_flat = board.flatten()  
         features = self.extract_board_features(board)  # Should return 4 elements
@@ -889,11 +831,8 @@ class GameState(): #10x20
         hold_piece = piece_map.get(self.holdPiece, 0)
         next_piece = piece_map.get(self.nextPieces[0] if self.nextPieces else 0, 0)
         hold_used = int(self.hold_used)
-
         piece_data = np.array([current_piece, next_piece, hold_piece, hold_used], dtype=np.float32)
-
         full_input = np.hstack([board_flat, piece_data, features]) # 200 + 4 + 4 = 208 elements
-
         return full_input.reshape(1, -1).astype(np.float32)
     
     # AUTO-PLAY
@@ -904,7 +843,6 @@ class GameState(): #10x20
         custom_loss_with_classes = partial(CustomLoss, num_classes=6)
         model = load_model("models/tetris_AI.h5", custom_objects={"CustomLoss": custom_loss_with_classes})
         tokenizer = joblib.load("models/tokenizer.pkl")
-
         index_to_word = {
             1: 'R', 2: 'L', 3: 'r', 4: 'D', 5: 'C', 6: 'd'
         }
@@ -916,7 +854,6 @@ class GameState(): #10x20
 
             # Prediction for current piece
             X_input = self.prepare_input().astype(np.float32) 
-           
             predicted_probs = model.predict(X_input)
 
             # Decode the predicted move(s)
@@ -925,10 +862,8 @@ class GameState(): #10x20
                 prob_dist = np.exp(prob_dist)
                 prob_dist = prob_dist / np.sum(prob_dist)
                 return prob_dist
-
             predicted_ids = [np.random.choice(len(p), p=apply_temperature(p, temperature=1.5))
                  for p in predicted_probs[0]]
-
             decoded_moves = [index_to_word.get(idx, '?') for idx in predicted_ids]
 
             # If decoded_moves is still empty or contains '?', it means there was a problem
@@ -975,7 +910,6 @@ class GameState(): #10x20
         return piece_map.get(piece, 0)
 
     def process_board(self):
-       
         processed_board = [self.piece_to_int(piece) for row in self.board for piece in row]
         return np.array(processed_board)
 

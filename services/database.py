@@ -17,9 +17,7 @@ def create_table():
              elapsed_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
              hold_used BINARY DEFAULT 0,
              game_ended BINARY               
-                   
-                   )
-    """)
+            )""")
     conn.commit()
     conn.close
 #create_table()
@@ -32,8 +30,6 @@ def save_game(init_board,end_board, currentPiece, nextPieces, holdPiece, moves, 
     next_piece_json = json.dumps(nextPieces)
     moves_json= json.dumps(moves)
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-   
-
     cursor.execute("""
     INSERT INTO games(init_board, end_board, currentPiece, nextPieces, holdPiece, moves, score,elapsed_time,hold_used, game_ended)
     VALUES(?,?,?,?,?,?,?,?,?,?)              
@@ -56,12 +52,10 @@ def save_game(init_board,end_board, currentPiece, nextPieces, holdPiece, moves, 
 def get_all_games():
     conn = sqlite3.connect("tetris.db")
     cursor = conn.cursor()
-
     cursor.execute("SELECT * FROM games")
 
     # get all results
     games = cursor.fetchall()
-
     games_dict = []
     for game in games:
         games_dict.append({
@@ -80,7 +74,6 @@ def get_all_games():
 
     conn.close()
     return games_dict
-
 def get_db_size(): # Cantidad de registros en la tabla
     conn=sqlite3.connect("tetris.db")
     cursor = conn.cursor()
@@ -91,12 +84,9 @@ def get_db_size(): # Cantidad de registros en la tabla
 
 def get_moves(): # Cantidad de registros en la tabla
     games = get_all_games()
-    
     tot_moves = 0
-
     for game in games:
         tot_moves += len(game["moves"])
-
     print(tot_moves)
 
 def truncate_table():
@@ -112,26 +102,21 @@ def truncate_table():
 truncate_table()
 def print_sequences():
     games = get_all_games()
-
     for game in games:
         print(game['moves'])
 
 def count_where_length(length):
     games = get_all_games()
     count = 0
-
     for game in games:
         if len(game['moves']) >= length:
             count += 1
-
     print(count)
 
 def remove_long_sequences(length):
     conn = sqlite3.connect("tetris.db")
     cursor = conn.cursor()
-
     games = get_all_games()
-
     to_delete = []
     for game in games:
         game_id = game['id']
@@ -143,24 +128,5 @@ def remove_long_sequences(length):
 
     # Delete them by id
     cursor.executemany('DELETE FROM games WHERE id = ?', to_delete)
-
     conn.commit()
     conn.close()
-    
-#View registers
-"""
-games = get_all_games()
-
-for game in games:
-    print(f"ID: {game['id']}")
-    print(f"Initial Board: {game['init_board']}")
-    print(f"End Board: {game['end_board']}")
-    print(f"Current Piece: {game['currentPiece']}")
-    print(f"Next Pieces: {game['nextPieces']}")
-    print(f"Hold Piece: {game['holdPiece']}")
-    print(f"Moves: {game['moves']}")
-    print(f"Score: {game['score']}")
-    print(f"Elapsed Time: {game['elapsed_time']}")
-    print(f"Hold Used: {game['hold_used']}")
-    print(f"Game Ended: {game['game_ended']}")
-    print("---")"""

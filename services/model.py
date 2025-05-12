@@ -4,8 +4,6 @@ from tf_keras.optimizers import Adam
 import tensorflow as tf
 import numpy as np
 
-
-
 class CustomLoss(tf.keras.losses.Loss):
     def __init__(self,num_classes, penalty_factor=1.0, reward_factor=1.0 ,reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="custom_loss"):
         super().__init__(reduction=reduction, name=name)
@@ -64,6 +62,5 @@ def create_model(input_shape, output_dim, max_seq_len):
     ])
     
     Optimizer = Adam(learning_rate=0.001, clipvalue=1.0)
-
     model.compile(loss=CustomLoss(num_classes=output_dim,reward_factor=0.5), optimizer=Optimizer, metrics=['accuracy'])
     return model
